@@ -57,7 +57,6 @@ def test_simple_co2():
         dims="time",
         coords={"time": np.arange(NUM_TIME_STEPS)},
     )
-    # %%
 
     wind = NodeFixInput(name="wind", input_flow=wind_flow, costs=1)
     hydrogen = Node(name="hydrogen", inputs=[wind], costs=3)
@@ -84,7 +83,6 @@ def test_simple_co2():
     # %%
 
 
-@pytest.mark.skip('storage seems to be still broken')
 def test_simple_co2_storage():
     # %%
 
@@ -97,10 +95,9 @@ def test_simple_co2_storage():
         np.ones(NUM_TIME_STEPS), dims="time", coords={"time": np.arange(NUM_TIME_STEPS)}
     )
     co2_flow[1::2] = 0
-    # %%
 
     storage = Storage(
-        costs=0.1, max_charging_speed=1.0, storage_loss=0.0, charging_loss=0.0
+        costs=1000, max_charging_speed=1.0, storage_loss=0.0, charging_loss=0.0
     )
 
     wind = NodeFixInput(name="wind", input_flow=wind_flow, costs=1)
@@ -110,13 +107,14 @@ def test_simple_co2_storage():
     methanol_synthesis = Node(
         name="methanol_synthesis",
         inputs=[co2, hydrogen],
-        costs=8e-6,
+        costs=1,
         input_proportions={"co2": 0.25, "hydrogen": 0.75},
     )
 
     system = System([wind, hydrogen, co2, methanol_synthesis])
     system.optimize("gurobi")
 
+    # %%
     assert system.model.solution.size_wind == 3.0
     assert system.model.solution.size_hydrogen == 1.5
     assert system.model.solution.size_methanol_synthesis == 2.0
