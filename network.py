@@ -243,11 +243,11 @@ class System:
                     == 0
                 )
                 model.add_constraints(
-                    level
+                    (level
                     - (1 - node.storage.storage_loss)
-                    * level.shift(time=-1).isel(time=slice(1, None))
+                    * level.shift(time=1)
                     - (1 - node.storage.charging_loss) * charge
-                    + discharge
+                    + discharge).isel(time=slice(1, None))
                     == 0
                 )
                 # XXX should we start with empty storage?
