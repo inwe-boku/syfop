@@ -210,7 +210,8 @@ class System:
                     model.add_constraints(
                         proportion * total_input
                         + (proportion - 1) * node.input_flows[name]
-                        == 0.0
+                        == 0.0,
+                        name=f"proportion_{node.name}_{name}"
                     )
 
         # storage
@@ -230,17 +231,22 @@ class System:
                 )
 
                 model.add_constraints(
-                    charge - size * node.storage.max_charging_speed <= 0
+                    charge - size * node.storage.max_charging_speed <= 0,
+                    name=f"max_charging_speed_{node.name}"
                 )
                 model.add_constraints(
-                    discharge - size * node.storage.max_charging_speed <= 0
+                    discharge - size * node.storage.max_charging_speed <= 0,
+                    name=f"max_discharging_speed_{node.name}"
                 )
-                model.add_constraints(level - size <= 0)
+                model.add_constraints(level - size <= 0,
+                    name=f'storage_max_level_{node.name}'
+                )
                 model.add_constraints(
                     level.isel(time=0)
                     - (1 - node.storage.charging_loss) * charge.isel(time=0)
                     + discharge.isel(time=0)
-                    == 0
+                    == 0,
+                    name=f'storage_level_balance_t0_{node.name}'
                 )
                 model.add_constraints(
                     (level
@@ -248,7 +254,8 @@ class System:
                     * level.shift(time=1)
                     - (1 - node.storage.charging_loss) * charge
                     + discharge).isel(time=slice(1, None))
-                    == 0
+                    == 0,
+                    name=f'storage_level_balance_{node.name}'
                 )
                 # XXX should we start with empty storage?
                 # model.add_constraints(level.isel(time=0) == 0)
@@ -279,21 +286,24 @@ class System:
                     if node.storage is None:  # wow this is an ugly nested if!
                         model.add_constraints(
                             1.0 * sum(node.output_flows)
-                            == sum(node.input_flows.values())
+                            == sum(node.input_flows.values()),
+                            name=f'input_output_flow_balance_{node.name}'
                         )
                     else:
                         model.add_constraints(
                             1.0 * sum(node.output_flows)
                             + node.storage.charge
                             - node.storage.discharge
-                            == sum(node.input_flows.values())
+                            == sum(node.input_flows.values()),
+                            name=f'input_output_flow_balance_{node.name}'
                         )
                 else:
                     if node.storage is None:  # wow this is an ugly nested if!
                         model.add_constraints(
                             1.0 * sum(node.output_flows)
                             - sum(node.input_flows.values())
-                            == 0
+                            == 0,
+                            name=f'input_output_flow_balance_{node.name}'
                         )
                     else:
                         model.add_constraints(
@@ -301,7 +311,8 @@ class System:
                             + node.storage.charge
                             - node.storage.discharge
                             - sum(node.input_flows.values())
-                            == 0
+                            == 0,
+                            name=f'input_output_flow_balance_{node.name}'
                         )
 
         model.add_objective(self.total_costs())
@@ -309,6 +320,7 @@ class System:
         return model
 
     def optimize(self, solver="glpk"):
+        # TODO infeasible should raise?
         self.model.solve(solver_name=solver, keep_files=True)
 
     def total_costs(self):
