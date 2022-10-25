@@ -29,9 +29,7 @@ def test_expensive_solar_pv(solver):
         )
 
     wind = NodeFixInput(name="wind", input_flow=const_time_series(0.5), costs=1)
-    solar_pv = NodeFixInput(
-        name="solar_pv", input_flow=const_time_series(0.5), costs=20.0
-    )
+    solar_pv = NodeFixInput(name="solar_pv", input_flow=const_time_series(0.5), costs=20.0)
 
     electricity = Node(name="electricity", inputs=[solar_pv, wind], costs=0)
 
@@ -70,9 +68,7 @@ def test_simple_co2_storage(with_storage):
     )
     if with_storage:
         co2_flow[1::2] = 0
-        storage = Storage(
-            costs=1000, max_charging_speed=1.0, storage_loss=0.0, charging_loss=0.0
-        )
+        storage = Storage(costs=1000, max_charging_speed=1.0, storage_loss=0.0, charging_loss=0.0)
     else:
         co2_flow = 0.5 * co2_flow
         storage = None
@@ -96,5 +92,7 @@ def test_simple_co2_storage(with_storage):
     np.testing.assert_almost_equal(system.model.solution.size_methanol_synthesis, 2.0)
     np.testing.assert_array_almost_equal(system.model.solution.flow_wind_hydrogen, 1.5)
     np.testing.assert_array_almost_equal(system.model.solution.flow_co2_methanol_synthesis, 0.5)
-    np.testing.assert_array_almost_equal(system.model.solution.flow_hydrogen_methanol_synthesis, 1.5)
+    np.testing.assert_array_almost_equal(
+        system.model.solution.flow_hydrogen_methanol_synthesis, 1.5
+    )
     np.testing.assert_array_almost_equal(system.model.solution.flow_methanol_synthesis, 2.0)
