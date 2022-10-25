@@ -69,11 +69,10 @@ class NodeFixInput(Node):
 
 
 class Storage:
+    # note: atm this is not a node
     def __init__(self, costs, max_charging_speed, storage_loss, charging_loss):
         self.costs = costs  # per size
-        self.max_charging_speed = (
-            max_charging_speed
-        )  # unit: share of total size per timestamp
+        self.max_charging_speed = max_charging_speed  # unit: share of total size per timestamp
         self.storage_loss = storage_loss
         self.charging_loss = charging_loss
 
@@ -103,9 +102,7 @@ time = pd.date_range(2020, freq="h", periods=NUM_TIME_STEPS)
 def timeseries_variable(model, name):
     return model.add_variables(
         name=name,
-        lower=xr.DataArray(
-            np.zeros(NUM_TIME_STEPS), coords={"time": np.arange(NUM_TIME_STEPS)}
-        ),
+        lower=xr.DataArray(np.zeros(NUM_TIME_STEPS), coords={"time": np.arange(NUM_TIME_STEPS)}),
     )
 
 
@@ -146,7 +143,7 @@ class System:
             if node.costs:  # None or 0 means that we don't need a size variable
                 node.size = model.add_variables(name=f"size_{node.name}", lower=0)
 
-        # XXX not sure if we really need this backward connection, also in won't work as soon as 
+        # XXX not sure if we really need this backward connection, also it won't work as soon as
         # we add demand
         for node in nodes:
             for input_ in node.inputs:
@@ -160,9 +157,7 @@ class System:
             if node.input_flows is None:
                 # FIXME we need a check for uniqueness of name somewhere
                 node.input_flows = {
-                    input_.name: timeseries_variable(
-                        model, f"flow_{input_.name}_{node.name}"
-                    )
+                    input_.name: timeseries_variable(model, f"flow_{input_.name}_{node.name}")
                     for input_ in node.inputs
                 }
             else:
@@ -178,13 +173,9 @@ class System:
                 if node.outputs is None:
                     # this is a variable for leaves, i.e. final output, not really needed, but
                     # nice to have and used in size constraints
-                    node.output_flows = [
-                        timeseries_variable(model, f"flow_{node.name}")
-                    ]
+                    node.output_flows = [timeseries_variable(model, f"flow_{node.name}")]
                 else:
-                    node.output_flows = [
-                        output.input_flows[node.name] for output in node.outputs
-                    ]
+                    node.output_flows = [output.input_flows[node.name] for output in node.outputs]
 
         # constraint: size of technology
         for node in nodes:
@@ -197,21 +188,15 @@ class System:
 
         # constraint: proportion of inputs
         for node in nodes:
-            if (
-                hasattr(node, "input_proportions")
-                and node.input_proportions is not None
-            ):
+            if hasattr(node, "input_proportions") and node.input_proportions is not None:
                 for name, proportion in node.input_proportions.items():
                     total_input = sum(
-                        input_flow
-                        for n, input_flow in node.input_flows.items()
-                        if n != name
+                        input_flow for n, input_flow in node.input_flows.items() if n != name
                     )
                     model.add_constraints(
-                        proportion * total_input
-                        + (proportion - 1) * node.input_flows[name]
+                        proportion * total_input + (proportion - 1) * node.input_flows[name]
                         == 0.0,
-                        name=f"proportion_{node.name}_{name}"
+                        name=f"proportion_{node.name}_{name}",
                     )
 
         # storage
@@ -232,30 +217,29 @@ class System:
 
                 model.add_constraints(
                     charge - size * node.storage.max_charging_speed <= 0,
-                    name=f"max_charging_speed_{node.name}"
+                    name=f"max_charging_speed_{node.name}",
                 )
                 model.add_constraints(
                     discharge - size * node.storage.max_charging_speed <= 0,
-                    name=f"max_discharging_speed_{node.name}"
+                    name=f"max_discharging_speed_{node.name}",
                 )
-                model.add_constraints(level - size <= 0,
-                    name=f'storage_max_level_{node.name}'
-                )
+                model.add_constraints(level - size <= 0, name=f"storage_max_level_{node.name}")
                 model.add_constraints(
                     level.isel(time=0)
                     - (1 - node.storage.charging_loss) * charge.isel(time=0)
                     + discharge.isel(time=0)
                     == 0,
-                    name=f'storage_level_balance_t0_{node.name}'
+                    name=f"storage_level_balance_t0_{node.name}",
                 )
                 model.add_constraints(
-                    (level
-                    - (1 - node.storage.storage_loss)
-                    * level.shift(time=1)
-                    - (1 - node.storage.charging_loss) * charge
-                    + discharge).isel(time=slice(1, None))
+                    (
+                        level
+                        - (1 - node.storage.storage_loss) * level.shift(time=1)
+                        - (1 - node.storage.charging_loss) * charge
+                        + discharge
+                    ).isel(time=slice(1, None))
                     == 0,
-                    name=f'storage_level_balance_{node.name}'
+                    name=f"storage_level_balance_{node.name}",
                 )
                 # XXX should we start with empty storage?
                 # model.add_constraints(level.isel(time=0) == 0)
@@ -266,7 +250,7 @@ class System:
                 # storage[t] < size
 
                 # for all time stamps t:
-                # sum(input_flows)[t] == sum(output_flows)[t] + eff * (storage[t] - 
+                # sum(input_flows)[t] == sum(output_flows)[t] + eff * (storage[t] -
                 #   storage[t-1]) + storage_loss * storage[t]
 
                 # storage_loss: share of lost storage per time stamp
@@ -297,9 +281,7 @@ class System:
         self.model.solve(solver_name=solver, keep_files=True)
 
     def total_costs(self):
-        technology_costs = sum(
-            node.size * node.costs for node in self.nodes if node.costs
-        )
+        technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
         storage_costs = sum(
             node.storage.size * node.storage.costs
             for node in self.nodes
@@ -307,7 +289,7 @@ class System:
         )
 
         if storage_costs != 0:
-            # if there is no technology, storage costs is simply an int and this is not 
+            # if there is no technology, storage costs is simply an int and this is not
             # combinable with a linopy expression uargh... :-/
             return technology_costs + storage_costs
         else:
@@ -317,9 +299,7 @@ class System:
         nx.draw(
             self.graph,
             pos=graphviz_layout(self.graph, prog="dot"),  # , args='concentrate=false'),
-            node_color=[
-                node_attrs["color"] for _, node_attrs in self.graph.nodes(data=True)
-            ],
+            node_color=[node_attrs["color"] for _, node_attrs in self.graph.nodes(data=True)],
             # node_size=5000,
             with_labels=True,
         )
@@ -332,7 +312,7 @@ def print_constraints(m):
     """
 
     from linopy.io import fill_by, float_to_str, int_to_str, concatenate, asarray
-    
+
     m.constraints.sanitize_missings()
     kwargs = dict(broadcast_like="vars", filter_missings=True)
     vars = m.constraints.iter_ravel("vars", **kwargs)
@@ -358,7 +338,7 @@ def print_constraints(m):
         l = fill_by(v.shape, new_con_b, "\n" + n + int_to_str(l_) + ":\n")
         s = fill_by(v.shape, end_of_con_b, "\n" + s_.astype(object) + "\n")
         r = fill_by(v.shape, end_of_con_b, float_to_str(r_, ensure_sign=False))
-        
+
         varname = np.frompyfunc(lambda i: m.variables.get_name_by_label(i) + "%i" % i, 1, 1)
 
         constraints = l + float_to_str(c) + " * " + varname(v) + s + r
