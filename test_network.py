@@ -13,9 +13,14 @@ from network import NUM_TIME_STEPS
 # %%
 
 
-def test_expensive_solar_pv():
+all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
+
+
+@all_solvers
+def test_expensive_solar_pv(solver):
     """If PV is more expensive than wind, the model should choose only wind (for constant wind/PV
-     profiles)."""
+    profiles)."""
+
     def const_time_series(value):
         return xr.DataArray(
             value * np.ones(NUM_TIME_STEPS),
@@ -40,7 +45,7 @@ def test_expensive_solar_pv():
     )
 
     system = System([wind, solar_pv, electricity, co2, methanol_synthesis])
-    system.optimize("gurobi")
+    system.optimize(solver)
 
     assert system.model.solution.size_wind == 30.0
     assert system.model.solution.size_solar_pv == 0.0
