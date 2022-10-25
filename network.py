@@ -274,46 +274,45 @@ class System:
 
         # constraint: sum of inputs = sum of outputs
         for node in nodes:
-            if node.output_flows is not None:
-                if isinstance(node, NodeFixInput) and isinstance(
-                    node.input_flows[""], xr.DataArray
-                ):
-                    # this if is needed because linopy wants all variables on one side and the 
-                    # constants on the other side...
-                    # XXX this is super weird... without multiplying by 1, the left-hand-side is of
-                    # wrong type, probably because there is only one thing in the summation!
+            if isinstance(node, NodeFixInput) and isinstance(
+                node.input_flows[""], xr.DataArray
+            ):
+                # this if is needed because linopy wants all variables on one side and the
+                # constants on the other side...
+                # XXX this is super weird... without multiplying by 1, the left-hand-side is of
+                # wrong type, probably because there is only one thing in the summation!
 
-                    if node.storage is None:  # wow this is an ugly nested if!
-                        model.add_constraints(
-                            sum(node.output_flows)
-                            == sum(node.input_flows.values()),
-                            name=f'input_output_flow_balance_{node.name}'
-                        )
-                    else:
-                        model.add_constraints(
-                            sum(node.output_flows)
-                            + node.storage.charge
-                            - node.storage.discharge
-                            == sum(node.input_flows.values()),
-                            name=f'input_output_flow_balance_{node.name}'
-                        )
+                if node.storage is None:  # wow this is an ugly nested if!
+                    model.add_constraints(
+                        sum(node.output_flows)
+                        == sum(node.input_flows.values()),
+                        name=f'input_output_flow_balance_{node.name}'
+                    )
                 else:
-                    if node.storage is None:  # wow this is an ugly nested if!
-                        model.add_constraints(
-                            sum(node.output_flows)
-                            - sum(node.input_flows.values())
-                            == 0,
-                            name=f'input_output_flow_balance_{node.name}'
-                        )
-                    else:
-                        model.add_constraints(
-                            sum(node.output_flows)
-                            + node.storage.charge
-                            - node.storage.discharge
-                            - sum(node.input_flows.values())
-                            == 0,
-                            name=f'input_output_flow_balance_{node.name}'
-                        )
+                    model.add_constraints(
+                        sum(node.output_flows)
+                        + node.storage.charge
+                        - node.storage.discharge
+                        == sum(node.input_flows.values()),
+                        name=f'input_output_flow_balance_{node.name}'
+                    )
+            else:
+                if node.storage is None:  # wow this is an ugly nested if!
+                    model.add_constraints(
+                        sum(node.output_flows)
+                        - sum(node.input_flows.values())
+                        == 0,
+                        name=f'input_output_flow_balance_{node.name}'
+                    )
+                else:
+                    model.add_constraints(
+                        sum(node.output_flows)
+                        + node.storage.charge
+                        - node.storage.discharge
+                        - sum(node.input_flows.values())
+                        == 0,
+                        name=f'input_output_flow_balance_{node.name}'
+                    )
 
         model.add_objective(self.total_costs())
 
