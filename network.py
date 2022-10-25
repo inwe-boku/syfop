@@ -191,7 +191,7 @@ class System:
             if node.output_flows is not None and node.size:
                 # FIXME this is probably wrong for FixedInput?!
                 model.add_constraints(
-                    1 * sum(node.output_flows) - node.size <= 0,
+                    sum(node.output_flows) - node.size <= 0,
                     name=f"limit_outflow_by_size_{node.name}",
                 )
 
@@ -285,13 +285,13 @@ class System:
 
                     if node.storage is None:  # wow this is an ugly nested if!
                         model.add_constraints(
-                            1.0 * sum(node.output_flows)
+                            sum(node.output_flows)
                             == sum(node.input_flows.values()),
                             name=f'input_output_flow_balance_{node.name}'
                         )
                     else:
                         model.add_constraints(
-                            1.0 * sum(node.output_flows)
+                            sum(node.output_flows)
                             + node.storage.charge
                             - node.storage.discharge
                             == sum(node.input_flows.values()),
@@ -300,14 +300,14 @@ class System:
                 else:
                     if node.storage is None:  # wow this is an ugly nested if!
                         model.add_constraints(
-                            1.0 * sum(node.output_flows)
+                            sum(node.output_flows)
                             - sum(node.input_flows.values())
                             == 0,
                             name=f'input_output_flow_balance_{node.name}'
                         )
                     else:
                         model.add_constraints(
-                            1.0 * sum(node.output_flows)
+                            sum(node.output_flows)
                             + node.storage.charge
                             - node.storage.discharge
                             - sum(node.input_flows.values())
