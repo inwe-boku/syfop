@@ -115,12 +115,12 @@ def test_simple_co2_storage():
     system.optimize("gurobi")
 
     # %%
-    assert system.model.solution.size_wind == 3.0
-    assert system.model.solution.size_hydrogen == 1.5
-    assert system.model.solution.size_methanol_synthesis == 2.0
-    assert np.all(system.model.solution.flow_wind_hydrogen == 1.5)
-    assert np.all(system.model.solution.flow_co2_methanol_synthesis == 0.5)
-    assert np.all(system.model.solution.flow_hydrogen_methanol_synthesis == 1.5)
-    assert np.all(system.model.solution.flow_methanol_synthesis == 2.0)
+    np.testing.assert_almost_equal(system.model.solution.size_wind, 3.0)
+    np.testing.assert_almost_equal(system.model.solution.size_hydrogen, 1.5)
+    np.testing.assert_almost_equal(system.model.solution.size_methanol_synthesis, 2.0)
+    np.testing.assert_array_almost_equal(system.model.solution.flow_wind_hydrogen, 1.5)
+    np.testing.assert_array_almost_equal(system.model.solution.flow_co2_methanol_synthesis, 0.5)
+    np.testing.assert_array_almost_equal(system.model.solution.flow_hydrogen_methanol_synthesis, 1.5)
+    np.testing.assert_array_almost_equal(system.model.solution.flow_methanol_synthesis, 2.0)
 
     # %%
