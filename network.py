@@ -106,7 +106,7 @@ def timeseries_variable(model, name):
     )
 
 
-class System:
+class Network:
     # basically a list of all technologies
     def __init__(self, nodes):
         self.nodes = nodes
