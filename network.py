@@ -13,69 +13,76 @@ from networkx.drawing.nx_pydot import graphviz_layout
 
 
 class NodeBase:
-    def create_variables(self, model):
-        if self.storage is not None:
-            self.storage.size = size = model.add_variables(
-                name=f"size_storage_{self.name}", lower=0
-            )
-            self.storage.level = level = timeseries_variable(
-                model, f"storage_level_{self.name}"
-            )
-            self.storage.charge = charge = timeseries_variable(
-                model, f"storage_charge_{self.name}"
-            )
-            self.storage.discharge = discharge = timeseries_variable(
-                model, f"storage_discharge_{self.name}"
-            )
+    def __init__(self, name, storage, costs):
+        self.name = name
+        self.storage = storage
+        self.costs = costs
 
-            model.add_constraints(
-                charge - size * self.storage.max_charging_speed <= 0,
-                name=f"max_charging_speed_{self.name}",
-            )
-            model.add_constraints(
-                discharge - size * self.storage.max_charging_speed <= 0,
-                name=f"max_discharging_speed_{self.name}",
-            )
-            model.add_constraints(level - size <= 0, name=f"storage_max_level_{self.name}")
-            model.add_constraints(
-                level.isel(time=0)
-                - (1 - self.storage.charging_loss) * charge.isel(time=0)
-                + discharge.isel(time=0)
-                == 0,
-                name=f"storage_level_balance_t0_{self.name}",
-            )
-            model.add_constraints(
-                (
-                    level
-                    - (1 - self.storage.storage_loss) * level.shift(time=1)
-                    - (1 - self.storage.charging_loss) * charge
-                    + discharge
-                ).isel(time=slice(1, None))
-                == 0,
-                name=f"storage_level_balance_{self.name}",
-            )
-            # XXX should we start with empty storage?
-            # model.add_constraints(level.isel(time=0) == 0)
+        # this needs to be filled later
+        self.outputs = None  
+        self.output_flows = None
 
-            # storage[0] == 0  # XXX is this correct to start with empty storage?
-            # storage[t] - storage[t-1] < charging_speed
-            # storage[t-1] - storage[t] < discharging_speed
-            # storage[t] < size
+    def _create_storage_variables(self, model):
+        self.storage.size = model.add_variables(name=f"size_storage_{self.name}", lower=0)
+        self.storage.level = timeseries_variable(model, f"storage_level_{self.name}")
+        self.storage.charge = timeseries_variable(model, f"storage_charge_{self.name}")
+        self.storage.discharge = timeseries_variable(model, f"storage_discharge_{self.name}")
 
-            # for all time stamps t:
-            # sum(input_flows)[t] == sum(output_flows)[t] + eff * (storage[t] -
-            #   storage[t-1]) + storage_loss * storage[t]
+    def _create_storage_constraints(self, model):
+        size = self.storage.size
+        level = self.storage.level
+        charge = self.storage.charge
+        discharge = self.storage.discharge
 
-            # storage_loss: share of lost storage per time stamp
-            # eff: charge and discharge efficiency
+        model.add_constraints(
+            charge - size * self.storage.max_charging_speed <= 0,
+            name=f"max_charging_speed_{self.name}",
+        )
+        model.add_constraints(
+            discharge - size * self.storage.max_charging_speed <= 0,
+            name=f"max_discharging_speed_{self.name}",
+        )
+        model.add_constraints(level - size <= 0, name=f"storage_max_level_{self.name}")
+        model.add_constraints(
+            level.isel(time=0)
+            - (1 - self.storage.charging_loss) * charge.isel(time=0)
+            + discharge.isel(time=0)
+            == 0,
+            name=f"storage_level_balance_t0_{self.name}",
+        )
+        model.add_constraints(
+            (
+                level
+                - (1 - self.storage.storage_loss) * level.shift(time=1)
+                - (1 - self.storage.charging_loss) * charge
+                + discharge
+            ).isel(time=slice(1, None))
+            == 0,
+            name=f"storage_level_balance_{self.name}",
+        )
+        # XXX should we start with empty storage?
+        # model.add_constraints(level.isel(time=0) == 0)
 
+        # storage[0] == 0  # XXX is this correct to start with empty storage?
+        # storage[t] - storage[t-1] < charging_speed
+        # storage[t-1] - storage[t] < discharging_speed
+        # storage[t] < size
 
-    def create_constraints(self, model):
-        # constraint: sum of inputs = sum of outputs
+        # for all time stamps t:
+        # sum(input_flows)[t] == sum(output_flows)[t] + eff * (storage[t] -
+        #   storage[t-1]) + storage_loss * storage[t]
+
+        # storage_loss: share of lost storage per time stamp
+        # eff: charge and discharge efficiency
+
+    def _create_constraint_inout_flow_balance(self, model):
+        """Add constraint: sum of inputs == sum of outputs."""
         lhs = sum(self.output_flows)
         # this if is needed because linopy wants all variables on one side and the constants on
         # the other side...
-        if isinstance(self, NodeInputProfileBase) and isinstance(self.input_flows[""], xr.DataArray):
+        if isinstance(self, NodeInputProfileBase) and isinstance(
+            self.input_flows[""], xr.DataArray
+        ):
             rhs = sum(self.input_flows.values())
         else:
             lhs = lhs - sum(self.input_flows.values())
@@ -84,7 +91,17 @@ class NodeBase:
         if self.storage is not None:
             lhs = lhs + self.storage.charge - self.storage.discharge
 
-        model.add_constraints(lhs == rhs, name=f"input_output_flow_balance_{self.name}")
+        model.add_constraints(lhs == rhs, name=f"inout_flow_balance_{self.name}")
+
+    def create_variables(self, model):
+        if self.storage is not None:
+            self._create_storage_variables(model)
+
+    def create_constraints(self, model):
+        self._create_constraint_inout_flow_balance(model)
+
+        if self.storage is not None:
+            self._create_storage_constraints(model)
 
 
 class NodeScalableBase(NodeBase):
@@ -93,6 +110,7 @@ class NodeScalableBase(NodeBase):
 
         # TODO atm some nodes should not have variables, but setting costs to 0 does the
         # job too
+        # FIXME is this correct to not have size when costs are 0?
         if self.costs:  # None or 0 means that we don't need a size variable
             self.size = model.add_variables(name=f"size_{self.name}", lower=0)
 
@@ -108,7 +126,7 @@ class NodeScalableBase(NodeBase):
         super().create_constraints(model)
 
         # constraint: size of technology
-        #if node.output_flows is not None and node.size:
+        # if node.output_flows is not None and node.size:
         # FIXME this is probably wrong for FixedInput?!
         if self.output_flows is not None and self.size:
             model.add_constraints(
@@ -123,27 +141,20 @@ class NodeScalableBase(NodeBase):
                     input_flow for n, input_flow in self.input_flows.items() if n != name
                 )
                 model.add_constraints(
-                    proportion * total_input + (proportion - 1) * self.input_flows[name]
-                    == 0.0,
+                    proportion * total_input + (proportion - 1) * self.input_flows[name] == 0.0,
                     name=f"proportion_{self.name}_{name}",
                 )
 
 
 class NodeInputProfileBase(NodeBase):
     def __init__(self, name, input_flow, costs, storage=None):
-        self.name = name
-        self.inputs = []
-        self.outputs = None  # this needs to be filled later
+        super().__init__(name, storage, costs)
 
-        self.storage = storage
+        self.inputs = []
 
         # TODO input_flow should be <1.? (i.e. dimensionless capacity factors)
         # but note: this is wrong for co2 (costs=0), i.e. only for scalable fixed input
-
         self.input_flows = {"": input_flow}
-        self.output_flows = None  # needs to be filled later
-
-        self.costs = costs
 
 
 class NodeOutputProfileBase(NodeBase):
@@ -169,31 +180,26 @@ class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
         self.input_flows[""] = self.size * self.input_flows[""]
 
 
-
 class NodeScalableOutputProfile(NodeScalableBase, NodeOutputProfileBase):
     # ?!
     ...
 
 
 class Node(NodeScalableBase):
+    """This node consists of a size """
     # examples:
     #  - electricity
     #  - hydrogen (with costs > 0)
     #  - curtailing
     def __init__(self, name, inputs, costs, input_proportions=None, storage=None):
-        self.name = name
+        super().__init__(name, storage, costs)
+
         self.inputs = inputs
-        self.outputs = None
-
         self.input_flows = None
-        self.output_flows = None
-
-        self.storage = storage
 
         # TODO some nodes do not need size/costs, e.g. curtailing etc, but setting costs=0 is doing
         # the job, but it creates some unnecessary variables
         self.size = None
-        self.costs = costs
 
         if input_proportions is not None:
             assert input_proportions.keys() == {input_.name for input_ in inputs}, (
@@ -224,7 +230,6 @@ class Storage:
     #  - h2 storage
     #  - co2 storage
     #  - battery
-
 
 
 # TODO this should be an input for Flow and maybe use a datetime range as coords
