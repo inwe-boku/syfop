@@ -4,7 +4,7 @@ import pytest
 from unittest import skip
 import numpy as np
 import xarray as xr
-from network import Storage, System
+from network import Storage, Network
 from network import Node
 from network import NodeFixInput
 from network import Storage
@@ -42,11 +42,11 @@ def test_expensive_solar_pv(solver):
         input_proportions={"co2": 0.25, "electricity": 0.75},
     )
 
-    system = System([wind, solar_pv, electricity, co2, methanol_synthesis])
-    system.optimize(solver)
+    network = Network([wind, solar_pv, electricity, co2, methanol_synthesis])
+    network.optimize(solver)
 
-    assert system.model.solution.size_wind == 30.0
-    assert system.model.solution.size_solar_pv == 0.0
+    assert network.model.solution.size_wind == 30.0
+    assert network.model.solution.size_solar_pv == 0.0
 
 
 @pytest.mark.parametrize("with_storage", [False, True])
@@ -84,15 +84,15 @@ def test_simple_co2_storage(with_storage):
         input_proportions={"co2": 0.25, "hydrogen": 0.75},
     )
 
-    system = System([wind, hydrogen, co2, methanol_synthesis])
-    system.optimize("gurobi")
+    network = Network([wind, hydrogen, co2, methanol_synthesis])
+    network.optimize("gurobi")
 
-    np.testing.assert_almost_equal(system.model.solution.size_wind, 3.0)
-    np.testing.assert_almost_equal(system.model.solution.size_hydrogen, 1.5)
-    np.testing.assert_almost_equal(system.model.solution.size_methanol_synthesis, 2.0)
-    np.testing.assert_array_almost_equal(system.model.solution.flow_wind_hydrogen, 1.5)
-    np.testing.assert_array_almost_equal(system.model.solution.flow_co2_methanol_synthesis, 0.5)
+    np.testing.assert_almost_equal(network.model.solution.size_wind, 3.0)
+    np.testing.assert_almost_equal(network.model.solution.size_hydrogen, 1.5)
+    np.testing.assert_almost_equal(network.model.solution.size_methanol_synthesis, 2.0)
+    np.testing.assert_array_almost_equal(network.model.solution.flow_wind_hydrogen, 1.5)
+    np.testing.assert_array_almost_equal(network.model.solution.flow_co2_methanol_synthesis, 0.5)
     np.testing.assert_array_almost_equal(
-        system.model.solution.flow_hydrogen_methanol_synthesis, 1.5
+        network.model.solution.flow_hydrogen_methanol_synthesis, 1.5
     )
-    np.testing.assert_array_almost_equal(system.model.solution.flow_methanol_synthesis, 2.0)
+    np.testing.assert_array_almost_equal(network.model.solution.flow_methanol_synthesis, 2.0)
