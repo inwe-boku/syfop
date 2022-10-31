@@ -109,6 +109,14 @@ def timeseries_variable(model, name):
 class Network:
     # basically a list of all technologies
     def __init__(self, nodes):
+
+        all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
+        if not (all_input_nodes <= set(nodes)):
+            raise ValueError(
+                "nodes used as input node, but missing in list of nodes passed to "
+                f"Network(): {', '.join(node.name for node in (all_input_nodes - set(nodes)))}"
+            )
+
         self.nodes = nodes
         self.nodes_dict = {node.name: node for node in nodes}
         self.graph = self._create_graph(nodes)
