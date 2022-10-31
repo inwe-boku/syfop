@@ -96,3 +96,12 @@ def test_simple_co2_storage(with_storage):
         network.model.solution.flow_hydrogen_methanol_synthesis, 1.5
     )
     np.testing.assert_array_almost_equal(network.model.solution.flow_methanol_synthesis, 2.0)
+
+
+def test_missing_node():
+    """At the moment """
+    wind = Node(name="wind", inputs=[], costs=10)
+    electricity = Node(name="electricity", inputs=[wind], costs=0)
+
+    with pytest.raises(ValueError, match='missing in list of nodes.* wind'):
+        network = Network([electricity])
