@@ -6,7 +6,8 @@ import numpy as np
 import xarray as xr
 from network import Storage, Network
 from network import Node
-from network import NodeFixInput
+from network import NodeFixInputProfile
+from network import NodeScalableInputProfile
 from network import Storage
 from network import NUM_TIME_STEPS
 
@@ -28,12 +29,12 @@ def test_expensive_solar_pv(solver):
             coords={"time": np.arange(NUM_TIME_STEPS)},
         )
 
-    wind = NodeFixInput(name="wind", input_flow=const_time_series(0.5), costs=1)
-    solar_pv = NodeFixInput(name="solar_pv", input_flow=const_time_series(0.5), costs=20.0)
+    wind = NodeScalableInputProfile(name="wind", input_flow=const_time_series(0.5), costs=1)
+    solar_pv = NodeScalableInputProfile(name="solar_pv", input_flow=const_time_series(0.5), costs=20.0)
 
     electricity = Node(name="electricity", inputs=[solar_pv, wind], costs=0)
 
-    co2 = NodeFixInput(name="co2", input_flow=const_time_series(5))
+    co2 = NodeFixInputProfile(name="co2", input_flow=const_time_series(5), costs=0)
 
     methanol_synthesis = Node(
         name="methanol_synthesis",
@@ -73,9 +74,9 @@ def test_simple_co2_storage(with_storage):
         co2_flow = 0.5 * co2_flow
         storage = None
 
-    wind = NodeFixInput(name="wind", input_flow=wind_flow, costs=1)
+    wind = NodeScalableInputProfile(name="wind", input_flow=wind_flow, costs=1)
     hydrogen = Node(name="hydrogen", inputs=[wind], costs=3)
-    co2 = NodeFixInput(name="co2", input_flow=co2_flow, storage=storage)
+    co2 = NodeFixInputProfile(name="co2", costs=0, input_flow=co2_flow, storage=storage)
 
     methanol_synthesis = Node(
         name="methanol_synthesis",
