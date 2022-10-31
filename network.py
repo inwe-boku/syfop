@@ -12,7 +12,174 @@ import matplotlib.pyplot as plt
 from networkx.drawing.nx_pydot import graphviz_layout
 
 
-class Node:
+class NodeBase:
+    def create_variables(self, model):
+        if self.storage is not None:
+            self.storage.size = size = model.add_variables(
+                name=f"size_storage_{self.name}", lower=0
+            )
+            self.storage.level = level = timeseries_variable(
+                model, f"storage_level_{self.name}"
+            )
+            self.storage.charge = charge = timeseries_variable(
+                model, f"storage_charge_{self.name}"
+            )
+            self.storage.discharge = discharge = timeseries_variable(
+                model, f"storage_discharge_{self.name}"
+            )
+
+            model.add_constraints(
+                charge - size * self.storage.max_charging_speed <= 0,
+                name=f"max_charging_speed_{self.name}",
+            )
+            model.add_constraints(
+                discharge - size * self.storage.max_charging_speed <= 0,
+                name=f"max_discharging_speed_{self.name}",
+            )
+            model.add_constraints(level - size <= 0, name=f"storage_max_level_{self.name}")
+            model.add_constraints(
+                level.isel(time=0)
+                - (1 - self.storage.charging_loss) * charge.isel(time=0)
+                + discharge.isel(time=0)
+                == 0,
+                name=f"storage_level_balance_t0_{self.name}",
+            )
+            model.add_constraints(
+                (
+                    level
+                    - (1 - self.storage.storage_loss) * level.shift(time=1)
+                    - (1 - self.storage.charging_loss) * charge
+                    + discharge
+                ).isel(time=slice(1, None))
+                == 0,
+                name=f"storage_level_balance_{self.name}",
+            )
+            # XXX should we start with empty storage?
+            # model.add_constraints(level.isel(time=0) == 0)
+
+            # storage[0] == 0  # XXX is this correct to start with empty storage?
+            # storage[t] - storage[t-1] < charging_speed
+            # storage[t-1] - storage[t] < discharging_speed
+            # storage[t] < size
+
+            # for all time stamps t:
+            # sum(input_flows)[t] == sum(output_flows)[t] + eff * (storage[t] -
+            #   storage[t-1]) + storage_loss * storage[t]
+
+            # storage_loss: share of lost storage per time stamp
+            # eff: charge and discharge efficiency
+
+
+    def create_constraints(self, model):
+        # constraint: sum of inputs = sum of outputs
+        lhs = sum(self.output_flows)
+        # this if is needed because linopy wants all variables on one side and the constants on
+        # the other side...
+        if isinstance(self, NodeInputProfileBase) and isinstance(self.input_flows[""], xr.DataArray):
+            rhs = sum(self.input_flows.values())
+        else:
+            lhs = lhs - sum(self.input_flows.values())
+            rhs = 0
+
+        if self.storage is not None:
+            lhs = lhs + self.storage.charge - self.storage.discharge
+
+        model.add_constraints(lhs == rhs, name=f"input_output_flow_balance_{self.name}")
+
+
+class NodeScalableBase(NodeBase):
+    def create_variables(self, model):
+        super().create_variables(model)
+
+        # TODO atm some nodes should not have variables, but setting costs to 0 does the
+        # job too
+        if self.costs:  # None or 0 means that we don't need a size variable
+            self.size = model.add_variables(name=f"size_{self.name}", lower=0)
+
+        # each input_flow is a variable (representing the amount of energy in the edge coming from
+        # input to self)
+        if not isinstance(self, NodeInputProfileBase):
+            self.input_flows = {
+                input_.name: timeseries_variable(model, f"flow_{input_.name}_{self.name}")
+                for input_ in self.inputs
+            }
+
+    def create_constraints(self, model):
+        super().create_constraints(model)
+
+        # constraint: size of technology
+        #if node.output_flows is not None and node.size:
+        # FIXME this is probably wrong for FixedInput?!
+        if self.output_flows is not None and self.size:
+            model.add_constraints(
+                sum(self.output_flows) - self.size <= 0,
+                name=f"limit_outflow_by_size_{self.name}",
+            )
+
+        # constraint: proportion of inputs
+        if hasattr(self, "input_proportions") and self.input_proportions is not None:
+            for name, proportion in self.input_proportions.items():
+                total_input = sum(
+                    input_flow for n, input_flow in self.input_flows.items() if n != name
+                )
+                model.add_constraints(
+                    proportion * total_input + (proportion - 1) * self.input_flows[name]
+                    == 0.0,
+                    name=f"proportion_{self.name}_{name}",
+                )
+
+
+class NodeInputProfileBase(NodeBase):
+    def __init__(self, name, input_flow, costs, storage=None):
+        self.name = name
+        self.inputs = []
+        self.outputs = None  # this needs to be filled later
+
+        self.storage = storage
+
+        # TODO input_flow should be <1.? (i.e. dimensionless capacity factors)
+        # but note: this is wrong for co2 (costs=0), i.e. only for scalable fixed input
+
+        self.input_flows = {"": input_flow}
+        self.output_flows = None  # needs to be filled later
+
+        self.costs = costs
+
+
+class NodeOutputProfileBase(NodeBase):
+    ...
+
+
+class NodeFixInputProfile(NodeInputProfileBase):
+    # CO2
+    ...
+
+
+class NodeFixOutputProfile(NodeOutputProfileBase):
+    # Demand
+    ...
+
+
+class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
+    # Wind, PV, ...
+    def create_variables(self, model):
+        super().create_variables(model)
+        # if input_flows is not None, we have a FixedInput, which we need to scale only
+        # if there is a size defined, otherwise it will stay as scalar
+        self.input_flows[""] = self.size * self.input_flows[""]
+
+
+
+class NodeScalableOutputProfile(NodeScalableBase, NodeOutputProfileBase):
+    # ?!
+    ...
+
+
+class Node(NodeScalableBase):
+    # examples:
+    #  - electricity
+    #  - hydrogen (with costs > 0)
+    #  - curtailing
     def __init__(self, name, inputs, costs, input_proportions=None, storage=None):
         self.name = name
         self.inputs = inputs
@@ -41,33 +208,6 @@ class Node:
         self.input_proportions = input_proportions
 
 
-class NodeFixInput(Node):
-    # input is a fixed constant with dims location/time
-    # this is use for input time series at the top of the tree
-    #
-    # size is determined by optimization model, if costs is not None, otherwise input is not scaled!
-    # this might limit flexibility a bit
-    def __init__(self, name, input_flow, costs=None, storage=None):
-        self.name = name
-        self.inputs = []
-        self.outputs = None
-
-        self.storage = storage
-
-        # TODO input_flow should be <1.? (i.e. dimensionless capacity factors)
-        # but note: this is wrong for co2 (costs=0), i.e. only for scalable fixed input
-
-        self.input_flows = {"": input_flow}
-        self.output_flows = None
-
-        assert (
-            costs != 0.0
-        ), "costs equal zero, this does not make sense here I guess? maybe use different node type?"
-
-        self.size = None
-        self.costs = costs
-
-
 class Storage:
     # note: atm this is not a node
     def __init__(self, costs, max_charging_speed, storage_loss, charging_loss):
@@ -85,13 +225,6 @@ class Storage:
     #  - co2 storage
     #  - battery
 
-
-class NodeFixOutput(Node):
-    # output is fixed with dims location/time
-    # usage example is to fix demand by use of a time series
-
-    # TODO not yet implemented
-    ...
 
 
 # TODO this should be an input for Flow and maybe use a datetime range as coords
@@ -125,7 +258,7 @@ class Network:
     def _create_graph(self, nodes):
         graph = nx.DiGraph()
         for node in nodes:
-            if isinstance(node, NodeFixInput):
+            if isinstance(node, NodeInputProfileBase):
                 color = "red"
             else:
                 color = "blue"
@@ -146,10 +279,7 @@ class Network:
         model = linopy.Model()
 
         for node in nodes:
-            # TODO atm some nodes should not have variables, but setting costs to 0 does the
-            # job too
-            if node.costs:  # None or 0 means that we don't need a size variable
-                node.size = model.add_variables(name=f"size_{node.name}", lower=0)
+            node.create_variables(model)
 
         # XXX not sure if we really need this backward connection, also it won't work as soon as
         # we add demand
@@ -158,21 +288,6 @@ class Network:
                 if input_.outputs is None:
                     input_.outputs = []
                 input_.outputs.append(node)
-
-        # each input_flow is a variable (representing the amount of energy in the edge coming from
-        # input to self)
-        for node in nodes:
-            if node.input_flows is None:
-                # FIXME we need a check for uniqueness of name somewhere
-                node.input_flows = {
-                    input_.name: timeseries_variable(model, f"flow_{input_.name}_{node.name}")
-                    for input_ in node.inputs
-                }
-            else:
-                # if input_flows is not None, we have a FixedInput, which we need to scale only
-                # if there is a size defined, otherwise it will stay as scalar
-                if node.size is not None:
-                    node.input_flows[""] = node.size * node.input_flows[""]
 
         # this is a bit weird: we want a variable or constant for each edge, but we store it as
         # dict for all input connections and as list for all output connections
@@ -185,100 +300,8 @@ class Network:
                 else:
                     node.output_flows = [output.input_flows[node.name] for output in node.outputs]
 
-        # constraint: size of technology
         for node in nodes:
-            if node.output_flows is not None and node.size:
-                # FIXME this is probably wrong for FixedInput?!
-                model.add_constraints(
-                    sum(node.output_flows) - node.size <= 0,
-                    name=f"limit_outflow_by_size_{node.name}",
-                )
-
-        # constraint: proportion of inputs
-        for node in nodes:
-            if hasattr(node, "input_proportions") and node.input_proportions is not None:
-                for name, proportion in node.input_proportions.items():
-                    total_input = sum(
-                        input_flow for n, input_flow in node.input_flows.items() if n != name
-                    )
-                    model.add_constraints(
-                        proportion * total_input + (proportion - 1) * node.input_flows[name]
-                        == 0.0,
-                        name=f"proportion_{node.name}_{name}",
-                    )
-
-        # storage
-        for node in nodes:
-            if node.storage is not None:
-                node.storage.size = size = model.add_variables(
-                    name=f"size_storage_{node.name}", lower=0
-                )
-                node.storage.level = level = timeseries_variable(
-                    model, f"storage_level_{node.name}"
-                )
-                node.storage.charge = charge = timeseries_variable(
-                    model, f"storage_charge_{node.name}"
-                )
-                node.storage.discharge = discharge = timeseries_variable(
-                    model, f"storage_discharge_{node.name}"
-                )
-
-                model.add_constraints(
-                    charge - size * node.storage.max_charging_speed <= 0,
-                    name=f"max_charging_speed_{node.name}",
-                )
-                model.add_constraints(
-                    discharge - size * node.storage.max_charging_speed <= 0,
-                    name=f"max_discharging_speed_{node.name}",
-                )
-                model.add_constraints(level - size <= 0, name=f"storage_max_level_{node.name}")
-                model.add_constraints(
-                    level.isel(time=0)
-                    - (1 - node.storage.charging_loss) * charge.isel(time=0)
-                    + discharge.isel(time=0)
-                    == 0,
-                    name=f"storage_level_balance_t0_{node.name}",
-                )
-                model.add_constraints(
-                    (
-                        level
-                        - (1 - node.storage.storage_loss) * level.shift(time=1)
-                        - (1 - node.storage.charging_loss) * charge
-                        + discharge
-                    ).isel(time=slice(1, None))
-                    == 0,
-                    name=f"storage_level_balance_{node.name}",
-                )
-                # XXX should we start with empty storage?
-                # model.add_constraints(level.isel(time=0) == 0)
-
-                # storage[0] == 0  # XXX is this correct to start with empty storage?
-                # storage[t] - storage[t-1] < charging_speed
-                # storage[t-1] - storage[t] < discharging_speed
-                # storage[t] < size
-
-                # for all time stamps t:
-                # sum(input_flows)[t] == sum(output_flows)[t] + eff * (storage[t] -
-                #   storage[t-1]) + storage_loss * storage[t]
-
-                # storage_loss: share of lost storage per time stamp
-                # eff: charge and discharge efficiency
-
-        # constraint: sum of inputs = sum of outputs
-        for node in nodes:
-            lhs = sum(node.output_flows)
-            # this if is needed because linopy wants all variables on one side and the constants on
-            # the other side...
-            if isinstance(node, NodeFixInput) and isinstance(node.input_flows[""], xr.DataArray):
-                rhs = sum(node.input_flows.values())
-            else:
-                lhs = lhs - sum(node.input_flows.values())
-                rhs = 0
-
-            if node.storage is not None:
-                lhs = lhs + node.storage.charge - node.storage.discharge
-
-            model.add_constraints(lhs == rhs, name=f"input_output_flow_balance_{node.name}")
+            node.create_constraints(model)
 
         model.add_objective(self.total_costs())
 
