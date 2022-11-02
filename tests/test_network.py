@@ -1,17 +1,13 @@
-# %%
-
 import pytest
 from unittest import skip
 import numpy as np
 import xarray as xr
-from network import Storage, Network
-from network import Node
-from network import NodeFixInputProfile
-from network import NodeScalableInputProfile
-from network import Storage
-from network import NUM_TIME_STEPS
-
-# %%
+from syfop.network import Storage, Network
+from syfop.network import Node
+from syfop.network import NodeFixInputProfile
+from syfop.network import NodeScalableInputProfile
+from syfop.network import Storage
+from syfop.network import NUM_TIME_STEPS
 
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
