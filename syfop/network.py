@@ -60,6 +60,7 @@ class Network:
         # this is a bit weird: we want a variable or constant for each edge, but we store it as
         # dict for all input connections and as list for all output connections
         for node in nodes:
+            # TODO why is this a list and not a dict?!
             if node.output_flows is None:
                 if node.outputs is None:
                     # this is a variable for leaves, i.e. final output, not really needed, but
