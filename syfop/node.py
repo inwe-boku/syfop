@@ -88,6 +88,8 @@ class NodeBase:
         # workaround if rhs is not a constant.
         # Note that rhs is only a constant if self is an instance of NodeInputProfileBase with
         # only one input, which is an xr.DataArray.
+        if not isinstance(lhs, linopy.Variable) and not isinstance(lhs, linopy.LinearExpression):
+            lhs, rhs = rhs, lhs
         if isinstance(rhs, linopy.Variable) or isinstance(rhs, linopy.LinearExpression):
             lhs = lhs - rhs
             rhs = 0

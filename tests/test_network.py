@@ -3,7 +3,7 @@ from unittest import skip
 import numpy as np
 import xarray as xr
 from syfop.network import Network
-from syfop.node import Node
+from syfop.node import Node, NodeFixOutputProfile
 from syfop.node import Storage
 from syfop.node import NodeFixInputProfile
 from syfop.node import NodeScalableInputProfile
@@ -102,3 +102,15 @@ def test_missing_node():
 
     with pytest.raises(ValueError, match="missing in list of nodes.* wind"):
         network = Network([electricity])
+
+
+def test_model_simple_demand():
+    """Just two nodes, constant wind and constant demand."""
+    wind = NodeScalableInputProfile(name="wind", input_flow=const_time_series(0.5), costs=1)
+    demand = NodeFixOutputProfile(
+        name="demand", inputs=[wind], output_flow=const_time_series(5.0), costs=0
+    )
+
+    network = Network([wind, demand])
+    network.optimize("gurobi")
+    np.testing.assert_almost_equal(network.model.solution.size_wind, 10.0)
