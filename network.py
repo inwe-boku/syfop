@@ -13,22 +13,26 @@ from networkx.drawing.nx_pydot import graphviz_layout
 
 
 class NodeBase:
+    """A Base class for all node types."""
+
     def __init__(self, name, storage, costs):
         self.name = name
         self.storage = storage
         self.costs = costs
 
         # this needs to be filled later
-        self.outputs = None  
+        self.outputs = None
         self.output_flows = None
 
     def _create_storage_variables(self, model):
+        """This method is not supposed to be called if the node does not have a storage."""
         self.storage.size = model.add_variables(name=f"size_storage_{self.name}", lower=0)
         self.storage.level = timeseries_variable(model, f"storage_level_{self.name}")
         self.storage.charge = timeseries_variable(model, f"storage_charge_{self.name}")
         self.storage.discharge = timeseries_variable(model, f"storage_discharge_{self.name}")
 
     def _create_storage_constraints(self, model):
+        """This method is not supposed to be called if the node does not have a storage."""
         size = self.storage.size
         level = self.storage.level
         charge = self.storage.charge
@@ -77,15 +81,16 @@ class NodeBase:
 
     def _create_constraint_inout_flow_balance(self, model):
         """Add constraint: sum of inputs == sum of outputs."""
+        # sum of output flows (left-hand-side of equation) and inputs must be equal:
         lhs = sum(self.output_flows)
-        # this if is needed because linopy wants all variables on one side and the constants on
-        # the other side...
-        if isinstance(self, NodeInputProfileBase) and isinstance(
-            self.input_flows[""], xr.DataArray
-        ):
-            rhs = sum(self.input_flows.values())
-        else:
-            lhs = lhs - sum(self.input_flows.values())
+        rhs = sum(self.input_flows.values())
+
+        # linopy wants all variables on one side and the constants on the other side: this is a
+        # workaround if rhs is not a constant.
+        # Note that rhs is only a constant if self is an instance of NodeInputProfileBase with
+        # only one input, which is an xr.DataArray.
+        if isinstance(rhs, linopy.Variable) or isinstance(rhs, linopy.LinearExpression):
+            lhs = lhs - rhs
             rhs = 0
 
         if self.storage is not None:
@@ -186,7 +191,8 @@ class NodeScalableOutputProfile(NodeScalableBase, NodeOutputProfileBase):
 
 
 class Node(NodeScalableBase):
-    """This node consists of a size """
+    """This node consists of a size"""
+
     # examples:
     #  - electricity
     #  - hydrogen (with costs > 0)
@@ -206,7 +212,7 @@ class Node(NodeScalableBase):
                 f"wrong parameter for node {name}: input_proportions needs to be a "
                 "dict with keys matching names of inputs"
             )
-            # is this check too strict due to numerical errors?
+            # TODO is this check too strict due to numerical errors?
             assert (
                 sum(input_proportions.values()) == 1.0
             ), f"wrong parameter for node {name}: input_proportions needs to sum up to 1."
