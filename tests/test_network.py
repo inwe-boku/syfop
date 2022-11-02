@@ -8,23 +8,23 @@ from syfop.node import Storage
 from syfop.node import NodeFixInputProfile
 from syfop.node import NodeScalableInputProfile
 from syfop.util import NUM_TIME_STEPS
-from syfop.util import timeseries_variable
 
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
+
+
+def const_time_series(value):
+    return xr.DataArray(
+        value * np.ones(NUM_TIME_STEPS),
+        dims="time",
+        coords={"time": np.arange(NUM_TIME_STEPS)},
+    )
 
 
 @all_solvers
 def test_expensive_solar_pv(solver):
     """If PV is more expensive than wind, the model should choose only wind (for constant wind/PV
     profiles)."""
-
-    def const_time_series(value):
-        return xr.DataArray(
-            value * np.ones(NUM_TIME_STEPS),
-            dims="time",
-            coords={"time": np.arange(NUM_TIME_STEPS)},
-        )
 
     wind = NodeScalableInputProfile(name="wind", input_flow=const_time_series(0.5), costs=1)
     solar_pv = NodeScalableInputProfile(
@@ -58,11 +58,7 @@ def test_simple_co2_storage(with_storage):
      - CO2 input flow is alternating between 0 and 1 and there is a CO2 storage
     """
 
-    wind_flow = xr.DataArray(
-        0.5 * np.ones(NUM_TIME_STEPS),
-        dims="time",
-        coords={"time": np.arange(NUM_TIME_STEPS)},
-    )
+    wind_flow = const_time_series(0.5)
     co2_flow = xr.DataArray(
         np.ones(NUM_TIME_STEPS), dims="time", coords={"time": np.arange(NUM_TIME_STEPS)}
     )
