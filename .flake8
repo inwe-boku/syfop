@@ -1,0 +1,15 @@
+[flake8]
+# https://flake8.pycqa.org/en/latest/user/configuration.html
+# As of 2020-10-27 flake8 does not yet support pyproject.toml, hence this file
+max-complexity = 10
+max-line-length = 100
+extend-ignore = E203
+exclude =
+    .dvc
+    .git
+    .github
+    .ipynb_checkpoints
+    .pytest_cache
+    data
+    data-simulation
+    notebooks
