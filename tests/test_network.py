@@ -8,6 +8,7 @@ from syfop.node import Storage
 from syfop.node import NodeFixInputProfile
 from syfop.node import NodeScalableInputProfile
 from syfop.util import NUM_TIME_STEPS
+from syfop.util import NUM_LOCATIONS
 
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
@@ -15,9 +16,12 @@ all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
 
 def const_time_series(value):
     return xr.DataArray(
-        value * np.ones(NUM_TIME_STEPS),
-        dims="time",
-        coords={"time": np.arange(NUM_TIME_STEPS)},
+        value * np.ones((NUM_TIME_STEPS, NUM_LOCATIONS)),
+        dims=("time", "locations"),
+        coords={
+            "time": np.arange(NUM_TIME_STEPS),
+            "locations": np.arange(NUM_LOCATIONS),
+        },
     )
 
 
@@ -59,9 +63,7 @@ def test_simple_co2_storage(with_storage):
     """
 
     wind_flow = const_time_series(0.5)
-    co2_flow = xr.DataArray(
-        np.ones(NUM_TIME_STEPS), dims="time", coords={"time": np.arange(NUM_TIME_STEPS)}
-    )
+    co2_flow = const_time_series(1.0)
     if with_storage:
         co2_flow[1::2] = 0
         storage = Storage(costs=1000, max_charging_speed=1.0, storage_loss=0.0, charging_loss=0.0)

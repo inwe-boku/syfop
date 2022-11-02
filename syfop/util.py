@@ -5,13 +5,33 @@ import pandas as pd
 
 # TODO this should be an input for Flow and maybe use a datetime range as coords
 NUM_TIME_STEPS = 8760
+NUM_LOCATIONS = 3
 time = pd.date_range(2020, freq="h", periods=NUM_TIME_STEPS)
 
 
 def timeseries_variable(model, name):
     return model.add_variables(
         name=name,
-        lower=xr.DataArray(np.zeros(NUM_TIME_STEPS), coords={"time": np.arange(NUM_TIME_STEPS)}),
+        lower=xr.DataArray(
+            np.zeros((NUM_TIME_STEPS, NUM_LOCATIONS)),
+            dims=("time", "locations"),
+            coords={
+                "time": np.arange(NUM_TIME_STEPS),
+                "locations": np.arange(NUM_LOCATIONS),
+            },
+        ),
+    )
+
+
+def random_time_series():
+    np.random.seed(42)
+    return xr.DataArray(
+        np.random.rand(NUM_TIME_STEPS, NUM_LOCATIONS),
+        dims=("time", "locations"),
+        coords={
+            "time": np.arange(NUM_TIME_STEPS),
+            "locations": np.arange(NUM_LOCATIONS),
+        },
     )
 
 
