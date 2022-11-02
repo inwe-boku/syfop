@@ -34,7 +34,7 @@ directory = "htmlcov"
 [tool.black]
 # https://black.readthedocs.io/en/stable/pyproject_toml.html
 line-length = 99
-target-version = ['py10']
+target-version = ['py310']
 exclude = '''
 (
   /(
