@@ -15,6 +15,14 @@ class NodeBase:
         self.outputs = None
         self.output_flows = None
 
+    def _create_input_flows_variables(self, model):
+        # each input_flow is a variable (representing the amount of energy in the edge coming from
+        # input to self)
+        self.input_flows = {
+            input_.name: timeseries_variable(model, f"flow_{input_.name}_{self.name}")
+            for input_ in self.inputs
+        }
+
     def _create_storage_variables(self, model):
         """This method is not supposed to be called if the node does not have a storage."""
         self.storage.size = model.add_variables(name=f"size_storage_{self.name}", lower=0)
@@ -90,6 +98,8 @@ class NodeBase:
         model.add_constraints(lhs == rhs, name=f"inout_flow_balance_{self.name}")
 
     def create_variables(self, model):
+        self._create_input_flows_variables(model)
+
         if self.storage is not None:
             self._create_storage_variables(model)
 
@@ -110,14 +120,6 @@ class NodeScalableBase(NodeBase):
         if self.costs:  # None or 0 means that we don't need a size variable
             self.size = model.add_variables(name=f"size_{self.name}", lower=0)
 
-        # each input_flow is a variable (representing the amount of energy in the edge coming from
-        # input to self)
-        if not isinstance(self, NodeInputProfileBase):
-            self.input_flows = {
-                input_.name: timeseries_variable(model, f"flow_{input_.name}_{self.name}")
-                for input_ in self.inputs
-            }
-
     def create_constraints(self, model):
         super().create_constraints(model)
 
@@ -133,6 +135,9 @@ class NodeScalableBase(NodeBase):
         # constraint: proportion of inputs
         if hasattr(self, "input_proportions") and self.input_proportions is not None:
             for name, proportion in self.input_proportions.items():
+                # this is more complicated than it has to be because we need to avoid using the
+                # same variable multiple times in a constraint
+                # https://github.com/PyPSA/linopy/issues/54
                 total_input = sum(
                     input_flow for n, input_flow in self.input_flows.items() if n != name
                 )
@@ -152,18 +157,28 @@ class NodeInputProfileBase(NodeBase):
         # but note: this is wrong for co2 (costs=0), i.e. only for scalable fixed input
         self.input_flows = {"": input_flow}
 
+    def _create_input_flows_variables(self, model):
+        # nothing to do here
+        ...
+
 
 class NodeOutputProfileBase(NodeBase):
-    ...
+    def __init__(self, name, inputs, output_flow, costs, storage=None):
+        super().__init__(name, storage, costs)
+
+        self.inputs = inputs
+        self.output_flows = [output_flow]
 
 
 class NodeFixInputProfile(NodeInputProfileBase):
     # CO2
+    # FIXME does it make sense that this class supports costs?
     ...
 
 
 class NodeFixOutputProfile(NodeOutputProfileBase):
     # Demand
+    # FIXME does it make sense that this class supports costs?
     ...
 
 
@@ -177,12 +192,13 @@ class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
 
 
 class NodeScalableOutputProfile(NodeScalableBase, NodeOutputProfileBase):
-    # ?!
+    # TODO what would be the usecase of such a node?!
+    # not implemented yet!
     ...
 
 
 class Node(NodeScalableBase):
-    """This node consists of a size"""
+    """This node has a size."""
 
     # examples:
     #  - electricity
