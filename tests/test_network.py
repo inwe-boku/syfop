@@ -2,12 +2,13 @@ import pytest
 from unittest import skip
 import numpy as np
 import xarray as xr
-from syfop.network import Storage, Network
-from syfop.network import Node
-from syfop.network import NodeFixInputProfile
-from syfop.network import NodeScalableInputProfile
-from syfop.network import Storage
-from syfop.network import NUM_TIME_STEPS
+from syfop.network import Network
+from syfop.node import Node
+from syfop.node import Storage
+from syfop.node import NodeFixInputProfile
+from syfop.node import NodeScalableInputProfile
+from syfop.util import NUM_TIME_STEPS
+from syfop.util import timeseries_variable
 
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
