@@ -26,7 +26,9 @@ def test_expensive_solar_pv(solver):
         )
 
     wind = NodeScalableInputProfile(name="wind", input_flow=const_time_series(0.5), costs=1)
-    solar_pv = NodeScalableInputProfile(name="solar_pv", input_flow=const_time_series(0.5), costs=20.0)
+    solar_pv = NodeScalableInputProfile(
+        name="solar_pv", input_flow=const_time_series(0.5), costs=20.0
+    )
 
     electricity = Node(name="electricity", inputs=[solar_pv, wind], costs=0)
 
@@ -96,9 +98,10 @@ def test_simple_co2_storage(with_storage):
 
 
 def test_missing_node():
-    """At the moment """
+    """If a node is used as input but not passed to the Network constructor, this is an error.
+    This might change in future."""
     wind = Node(name="wind", inputs=[], costs=10)
     electricity = Node(name="electricity", inputs=[wind], costs=0)
 
-    with pytest.raises(ValueError, match='missing in list of nodes.* wind'):
+    with pytest.raises(ValueError, match="missing in list of nodes.* wind"):
         network = Network([electricity])
