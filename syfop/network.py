@@ -10,7 +10,6 @@ from syfop.util import timeseries_variable
 class Network:
     # basically a list of all technologies
     def __init__(self, nodes):
-
         all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
         if not (all_input_nodes <= set(nodes)):
             raise ValueError(

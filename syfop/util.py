@@ -35,6 +35,17 @@ def random_time_series():
     )
 
 
+def const_time_series(value):
+    return xr.DataArray(
+        value * np.ones((NUM_TIME_STEPS, NUM_LOCATIONS)),
+        dims=("time", "locations"),
+        coords={
+            "time": np.arange(NUM_TIME_STEPS),
+            "locations": np.arange(NUM_LOCATIONS),
+        },
+    )
+
+
 # %%
 def print_constraints(m):
     """

@@ -9,20 +9,10 @@ from syfop.node import NodeFixInputProfile
 from syfop.node import NodeScalableInputProfile
 from syfop.util import NUM_TIME_STEPS
 from syfop.util import NUM_LOCATIONS
+from syfop.util import const_time_series
 
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
-
-
-def const_time_series(value):
-    return xr.DataArray(
-        value * np.ones((NUM_TIME_STEPS, NUM_LOCATIONS)),
-        dims=("time", "locations"),
-        coords={
-            "time": np.arange(NUM_TIME_STEPS),
-            "locations": np.arange(NUM_LOCATIONS),
-        },
-    )
 
 
 @all_solvers
