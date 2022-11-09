@@ -68,3 +68,4 @@ from networkx.drawing.nx_pydot import graphviz_layout
 from syfop.network import *
 from syfop.node import *
 from syfop.util import random_time_series
+from syfop.util import const_time_series
