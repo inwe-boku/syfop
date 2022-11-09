@@ -30,19 +30,30 @@ def test_expensive_solar_pv(solver):
     """If PV is more expensive than wind, the model should choose only wind (for constant wind/PV
     profiles)."""
 
-    wind = NodeScalableInputProfile(name="wind", input_flow=const_time_series(0.5), costs=1)
+    wind = NodeScalableInputProfile(
+        name="wind", input_flow=const_time_series(0.5), costs=1, output_unit="MW"
+    )
     solar_pv = NodeScalableInputProfile(
-        name="solar_pv", input_flow=const_time_series(0.5), costs=20.0
+        name="solar_pv", input_flow=const_time_series(0.5), costs=20.0, output_unit="MW"
     )
 
-    electricity = Node(name="electricity", inputs=[solar_pv, wind], costs=0)
+    electricity = Node(
+        name="electricity",
+        inputs=[solar_pv, wind],
+        costs=0,
+        output_unit="MW",
+    )
 
-    co2 = NodeFixInputProfile(name="co2", input_flow=const_time_series(5), costs=0)
+    co2 = NodeFixInputProfile(
+        name="co2", input_flow=const_time_series(5), costs=0, output_unit="t"
+    )
 
     methanol_synthesis = Node(
         name="methanol_synthesis",
         inputs=[co2, electricity],
         costs=8e-6,
+        convert_factor=1.0,  # this is not a realistic value probably
+        output_unit="t",
         input_proportions={"co2": 0.25, "electricity": 0.75},
     )
 
@@ -71,14 +82,17 @@ def test_simple_co2_storage(with_storage):
         co2_flow = 0.5 * co2_flow
         storage = None
 
-    wind = NodeScalableInputProfile(name="wind", input_flow=wind_flow, costs=1)
-    hydrogen = Node(name="hydrogen", inputs=[wind], costs=3)
-    co2 = NodeFixInputProfile(name="co2", costs=0, input_flow=co2_flow, storage=storage)
+    wind = NodeScalableInputProfile(name="wind", input_flow=wind_flow, costs=1, output_unit="MW")
+    hydrogen = Node(name="hydrogen", inputs=[wind], costs=3, output_unit="t")
+    co2 = NodeFixInputProfile(
+        name="co2", input_flow=co2_flow, storage=storage, costs=0, output_unit="t"
+    )
 
     methanol_synthesis = Node(
         name="methanol_synthesis",
         inputs=[co2, hydrogen],
         costs=1,
+        output_unit="t",
         input_proportions={"co2": 0.25, "hydrogen": 0.75},
     )
 
@@ -99,8 +113,8 @@ def test_simple_co2_storage(with_storage):
 def test_missing_node():
     """If a node is used as input but not passed to the Network constructor, this is an error.
     This might change in future."""
-    wind = Node(name="wind", inputs=[], costs=10)
-    electricity = Node(name="electricity", inputs=[wind], costs=0)
+    wind = Node(name="wind", inputs=[], costs=10, output_unit="MW")
+    electricity = Node(name="electricity", inputs=[wind], costs=0, output_unit="MW")
 
     with pytest.raises(ValueError, match="missing in list of nodes.* wind"):
         network = Network([electricity])
@@ -108,9 +122,11 @@ def test_missing_node():
 
 def test_model_simple_demand():
     """Just two nodes, constant wind and constant demand."""
-    wind = NodeScalableInputProfile(name="wind", input_flow=const_time_series(0.5), costs=1)
+    wind = NodeScalableInputProfile(
+        name="wind", input_flow=const_time_series(0.5), costs=1, output_unit="MW"
+    )
     demand = NodeFixOutputProfile(
-        name="demand", inputs=[wind], output_flow=const_time_series(5.0), costs=0
+        name="demand", inputs=[wind], output_flow=const_time_series(5.0), costs=0, output_unit="MW"
     )
 
     network = Network([wind, demand])

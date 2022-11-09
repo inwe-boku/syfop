@@ -4,12 +4,14 @@ from syfop.util import timeseries_variable
 
 
 class NodeBase:
-    """A Base class for all node types."""
+    """A Base class for all node types. Do not initialize directly, use sub classes."""
 
-    def __init__(self, name, storage, costs):
+    def __init__(self, name, storage, costs, output_unit, convert_factor=1.0):
         self.name = name
         self.storage = storage
         self.costs = costs
+        self.output_unit = output_unit
+        self.convert_factor = convert_factor
 
         # this needs to be filled later
         self.outputs = None
@@ -82,7 +84,7 @@ class NodeBase:
         """Add constraint: sum of inputs == sum of outputs."""
         # sum of output flows (left-hand-side of equation) and inputs must be equal:
         lhs = sum(self.output_flows)
-        rhs = sum(self.input_flows.values())
+        rhs = self.convert_factor * sum(self.input_flows.values())
 
         # linopy wants all variables on one side and the constants on the other side: this is a
         # workaround if rhs is not a constant.
@@ -150,8 +152,8 @@ class NodeScalableBase(NodeBase):
 
 
 class NodeInputProfileBase(NodeBase):
-    def __init__(self, name, input_flow, costs, storage=None):
-        super().__init__(name, storage, costs)
+    def __init__(self, name, input_flow, costs, output_unit, storage=None):
+        super().__init__(name, storage, costs, output_unit)
 
         self.inputs = []
 
@@ -160,13 +162,13 @@ class NodeInputProfileBase(NodeBase):
         self.input_flows = {"": input_flow}
 
     def _create_input_flows_variables(self, model):
-        # nothing to do here
+        # nothing to do here, input is given via profile
         ...
 
 
 class NodeOutputProfileBase(NodeBase):
-    def __init__(self, name, inputs, output_flow, costs, storage=None):
-        super().__init__(name, storage, costs)
+    def __init__(self, name, inputs, output_flow, costs, output_unit, storage=None):
+        super().__init__(name, storage, costs, output_unit)
 
         self.inputs = inputs
         self.output_flows = [output_flow]
@@ -181,6 +183,7 @@ class NodeFixInputProfile(NodeInputProfileBase):
 class NodeFixOutputProfile(NodeOutputProfileBase):
     # Demand
     # FIXME does it make sense that this class supports costs?
+    # TODO do we need to support input_proportions here?
     ...
 
 
@@ -206,10 +209,20 @@ class Node(NodeScalableBase):
     #  - electricity
     #  - hydrogen (with costs > 0)
     #  - curtailing
-    def __init__(self, name, inputs, costs, input_proportions=None, storage=None):
-        super().__init__(name, storage, costs)
+    def __init__(
+        self,
+        name,
+        inputs,
+        costs,
+        output_unit,
+        convert_factor=1.0,
+        input_proportions=None,
+        storage=None,
+    ):
+        super().__init__(name, storage, costs, output_unit, convert_factor)
 
         self.inputs = inputs
+
         self.input_flows = None
 
         # TODO some nodes do not need size/costs, e.g. curtailing etc, but setting costs=0 is doing
