@@ -76,9 +76,9 @@ class Network:
 
         return model
 
-    def optimize(self, solver="glpk"):
+    def optimize(self, solver_name="glpk", **kwargs):
         # TODO infeasible should raise?
-        self.model.solve(solver_name=solver, keep_files=True)
+        self.model.solve(solver_name=solver_name, keep_files=True, io_api="direct", **kwargs)
 
     def total_costs(self):
         technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
