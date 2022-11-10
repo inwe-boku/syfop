@@ -230,6 +230,7 @@ class Node(NodeScalableBase):
         self.size = None
 
         if input_proportions is not None:
+            # TODO maybe skip last equation
             assert input_proportions.keys() == {input_.name for input_ in inputs}, (
                 f"wrong parameter for node {name}: input_proportions needs to be a "
                 "dict with keys matching names of inputs"
