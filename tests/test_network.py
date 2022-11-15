@@ -1,14 +1,10 @@
 import pytest
-from unittest import skip
 import numpy as np
-import xarray as xr
 from syfop.network import Network
 from syfop.node import Node, NodeFixOutputProfile
 from syfop.node import Storage
 from syfop.node import NodeFixInputProfile
 from syfop.node import NodeScalableInputProfile
-from syfop.util import NUM_TIME_STEPS
-from syfop.util import NUM_LOCATIONS
 from syfop.util import const_time_series
 
 
@@ -107,7 +103,7 @@ def test_missing_node():
     electricity = Node(name="electricity", inputs=[wind], costs=0, output_unit="MW")
 
     with pytest.raises(ValueError, match="missing in list of nodes.* wind"):
-        network = Network([electricity])
+        Network([electricity])
 
 
 def test_model_simple_demand():
