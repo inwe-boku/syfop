@@ -56,17 +56,20 @@ class Network:
                     input_.outputs = []
                 input_.outputs.append(node)
 
-        # this is a bit weird: we want a variable or constant for each edge, but we store it as
-        # dict for all input connections and as list for all output connections
+        # output connections are not known when Node objects are created, so we add
+        # it to the Node objects here
         for node in nodes:
-            # TODO why is this a list and not a dict?!
             if node.output_flows is None:
                 if node.outputs is None:
                     # this is a variable for leaves, i.e. final output, not really needed, but
                     # nice to have and used in size constraints
-                    node.output_flows = [timeseries_variable(model, f"flow_{node.name}")]
+                    node.output_flows = {
+                        node.name: timeseries_variable(model, f"flow_{node.name}")
+                    }
                 else:
-                    node.output_flows = [output.input_flows[node.name] for output in node.outputs]
+                    node.output_flows = {
+                        node.name: output.input_flows[node.name] for output in node.outputs
+                    }
 
         for node in nodes:
             node.create_constraints(model)
