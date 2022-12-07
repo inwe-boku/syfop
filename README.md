@@ -1,5 +1,4 @@
 # syfop
-lumbric
 
 <!--
  [![Version](http://img.shields.io/pypi/v/ppw?color=brightgreen)](https://pypi.python.org/pypi/ppw)
@@ -10,27 +9,33 @@ lumbric
 [![Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 -->
 
+<!--
 <p align="center">
 <a href="https://pypi.python.org/pypi/syfop">
     <img src="https://img.shields.io/pypi/v/syfop.svg"
         alt = "Release Status">
 </a>
+-->
 
-<a href="https://github.com/lumbric/syfop/actions">
-    <img src="https://github.com/lumbric/syfop/actions/workflows/main.yml/badge.svg?branch=release" alt="CI Status">
+<a href="https://github.com/inwe-boku/syfop/actions">
+    <img src="https://github.com/inwe-boku/syfop/actions/workflows/dev.yml/badge.svg" alt="Tests">
 </a>
 
-<a href="https://lumbric.github.io/syfop/">
-    <img src="https://img.shields.io/website/https/lumbric.github.io/syfop/index.html.svg?label=docs&down_message=unavailable&up_message=available" alt="Documentation Status">
+<!--
+<a href="https://inwe-boku.github.io/syfop/">
+    <img src="https://img.shields.io/website/https/inwe-boku.github.io/syfop/index.html.svg?label=docs&down_message=unavailable&up_message=available" alt="Documentation Status">
 </a>
 
 <a href="https://pyup.io/repos/github/lumbric/syfop/">
 <img src="https://pyup.io/repos/github/lumbric/syfop/shield.svg" alt="Updates">
 </a>
 
+-->
 </p>
 
 
 Synthetic fuel optimizer
 
-* Documentation: <https://inwe-boku.github.io/syfop/>
+<!--
+ * Documentation: <https://inwe-boku.github.io/syfop/>
+-->
