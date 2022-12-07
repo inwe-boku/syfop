@@ -74,7 +74,7 @@ class NodeBase:
         # storage[t] < size
 
         # for all time stamps t:
-        # sum(input_flows)[t] == sum(output_flows)[t] + eff * (storage[t] -
+        # sum(input_flows)[t] == sum(output_flows.items())[t] + eff * (storage[t] -
         #   storage[t-1]) + storage_loss * storage[t]
 
         # storage_loss: share of lost storage per time stamp
@@ -83,7 +83,7 @@ class NodeBase:
     def _create_constraint_inout_flow_balance(self, model):
         """Add constraint: sum of inputs == sum of outputs."""
         # sum of output flows (left-hand-side of equation) and inputs must be equal:
-        lhs = sum(self.output_flows)
+        lhs = sum(self.output_flows.values())
         rhs = self.convert_factor * sum(self.input_flows.values())
 
         # linopy wants all variables on one side and the constants on the other side: this is a
@@ -128,11 +128,10 @@ class NodeScalableBase(NodeBase):
         super().create_constraints(model)
 
         # constraint: size of technology
-        # if node.output_flows is not None and node.size:
         # FIXME this is probably wrong for FixedInput?!
         if self.output_flows is not None and self.size:
             model.add_constraints(
-                sum(self.output_flows) - self.size <= 0,
+                sum(self.output_flows.values()) - self.size <= 0,
                 name=f"limit_outflow_by_size_{self.name}",
             )
 
@@ -171,7 +170,7 @@ class NodeOutputProfileBase(NodeBase):
         super().__init__(name, storage, costs, output_unit)
 
         self.inputs = inputs
-        self.output_flows = [output_flow]
+        self.output_flows = {name: output_flow}
 
 
 class NodeFixInputProfile(NodeInputProfileBase):
