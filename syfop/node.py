@@ -135,19 +135,24 @@ class NodeScalableBase(NodeBase):
                 name=f"limit_outflow_by_size_{self.name}",
             )
 
-        # constraint: proportion of inputs
-        if hasattr(self, "input_proportions") and self.input_proportions is not None:
-            for name, proportion in self.input_proportions.items():
+        def add_proportion_constraints(model, proportions, flows):
+            if proportions is None:
+                return
+
+            for name, proportion in proportions.items():
                 # this is more complicated than it has to be because we need to avoid using the
                 # same variable multiple times in a constraint
                 # https://github.com/PyPSA/linopy/issues/54
                 total_input = sum(
-                    input_flow for n, input_flow in self.input_flows.items() if n != name
+                    flow for n, flow in flows.items() if n != name
                 )
                 model.add_constraints(
-                    proportion * total_input + (proportion - 1) * self.input_flows[name] == 0.0,
+                    proportion * total_input + (proportion - 1) * flows[name] == 0.0,
                     name=f"proportion_{self.name}_{name}",
                 )
+
+        # constraint: proportion of inputs
+        add_proportion_constraints(model, self.input_proportions, self.input_flows)
 
 
 class NodeInputProfileBase(NodeBase):
