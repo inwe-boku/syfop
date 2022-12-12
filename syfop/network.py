@@ -71,6 +71,22 @@ class Network:
                         node.name: output.input_flows[node.name] for output in node.outputs
                     }
 
+                    # TODO this has quadratic performance and is very ugly, but having dicts
+                    # everywhere also not nice, maybe switch to some adjacency matrix thingy, where
+                    # one can select all input edges or output edges by choosing a column or a row?
+                    node.output_commodities = [
+                        output.input_commodities[output.inputs.index(node)]
+                        for output in node.outputs
+                        if output.input_commodities is not None  # FIXME this line is stupid
+                    ]
+
+                    # check whether output_proportions are valid and not missing if required
+                    # note that the first part could be checked already in the constructor of the
+                    # node classes which take output_proportions as parameter
+                    node._check_proportions_valid_or_missing(
+                        node.outputs, node.output_proportions, node.output_commodities, "output"
+                    )
+
         for node in nodes:
             node.create_constraints(model)
 

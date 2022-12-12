@@ -17,6 +17,34 @@ class NodeBase:
         self.outputs = None
         self.output_flows = None
 
+        # overwritten in some subclasses
+        self.input_commodities = None
+        self.output_commodities = None
+        self.input_proportions = None
+        self.output_proportions = None
+
+    def _check_proportions_valid_or_missing(
+        self, nodes, proportions, commodities, input_or_output
+    ):
+        """Raise an error if invalid proportions are provided or if no proportions are provided,
+        but required due to different commodities."""
+        if proportions is not None:
+            # TODO maybe skip one input/output, because equality maybe be hard due
+            # to numerical errors, see comment below
+            assert proportions.keys() == {node.name for node in nodes}, (
+                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to be a "
+                "dict with keys matching names of {input_or_output}s"
+            )
+            # TODO is this check too strict due to numerical errors?
+            assert (
+                sum(proportions.values()) == 1.0
+            ), f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to sum up to 1."
+        elif len(set(commodities)) > 1:
+            raise ValueError(
+                f"node {self.name} has different {input_or_output} commodities, "
+                f"but no {input_or_output} proportions provided"
+            )
+
     def _create_input_flows_variables(self, model):
         # each input_flow is a variable (representing the amount of energy in the edge coming from
         # input to self)
@@ -31,6 +59,17 @@ class NodeBase:
         self.storage.level = timeseries_variable(model, f"storage_level_{self.name}")
         self.storage.charge = timeseries_variable(model, f"storage_charge_{self.name}")
         self.storage.discharge = timeseries_variable(model, f"storage_discharge_{self.name}")
+
+    def _create_proportion_constraints(self, model, proportions, flows):
+        for name, proportion in proportions.items():
+            # this is more complicated than it has to be because we need to avoid using the
+            # same variable multiple times in a constraint
+            # https://github.com/PyPSA/linopy/issues/54
+            total_input = sum(flow for n, flow in flows.items() if n != name)
+            model.add_constraints(
+                proportion * total_input + (proportion - 1) * flows[name] == 0.0,
+                name=f"proportion_{self.name}_{name}",
+            )
 
     def _create_storage_constraints(self, model):
         """This method is not supposed to be called if the node does not have a storage."""
@@ -113,6 +152,14 @@ class NodeBase:
         if self.storage is not None:
             self._create_storage_constraints(model)
 
+        # constraint: proportion of inputs
+        if self.input_proportions is not None:
+            self._create_proportion_constraints(model, self.input_proportions, self.input_flows)
+
+        # constraint: proportion of outputs
+        if self.output_proportions is not None:
+            self._create_proportion_constraints(model, self.output_proportions, self.output_flows)
+
 
 class NodeScalableBase(NodeBase):
     def create_variables(self, model):
@@ -135,31 +182,23 @@ class NodeScalableBase(NodeBase):
                 name=f"limit_outflow_by_size_{self.name}",
             )
 
-        def add_proportion_constraints(model, proportions, flows):
-            if proportions is None:
-                return
-
-            for name, proportion in proportions.items():
-                # this is more complicated than it has to be because we need to avoid using the
-                # same variable multiple times in a constraint
-                # https://github.com/PyPSA/linopy/issues/54
-                total_input = sum(
-                    flow for n, flow in flows.items() if n != name
-                )
-                model.add_constraints(
-                    proportion * total_input + (proportion - 1) * flows[name] == 0.0,
-                    name=f"proportion_{self.name}_{name}",
-                )
-
-        # constraint: proportion of inputs
-        add_proportion_constraints(model, self.input_proportions, self.input_flows)
-
 
 class NodeInputProfileBase(NodeBase):
-    def __init__(self, name, input_flow, costs, output_unit, storage=None):
+    def __init__(
+        self,
+        name,
+        input_flow,
+        costs,
+        output_unit,
+        output_proportions=None,
+        storage=None,
+    ):
         super().__init__(name, storage, costs, output_unit)
 
         self.inputs = []
+
+        # validated in class Network, when every node knows it's outputs
+        self.output_proportions = output_proportions
 
         # TODO input_flow should be <1.? (i.e. dimensionless capacity factors)
         # but note: this is wrong for co2 (costs=0), i.e. only for scalable fixed input
@@ -171,16 +210,38 @@ class NodeInputProfileBase(NodeBase):
 
 
 class NodeOutputProfileBase(NodeBase):
-    def __init__(self, name, inputs, output_flow, costs, output_unit, storage=None):
+    def __init__(
+        self,
+        name,
+        inputs,
+        input_commodities,
+        output_flow,
+        costs,
+        output_unit,
+        input_proportions=None,
+        storage=None,
+    ):
         super().__init__(name, storage, costs, output_unit)
 
         self.inputs = inputs
+
+        # str = equal for each input
+        # XXX code duplication with class Node... :-/
+        if isinstance(input_commodities, str):
+            input_commodities = len(inputs) * [input_commodities]
+        self.input_commodities = input_commodities
+
         self.output_flows = {name: output_flow}
+
+        self._check_proportions_valid_or_missing(
+            self.inputs, input_proportions, input_commodities, "input"
+        )
+        self.input_proportions = input_proportions
 
 
 class NodeFixInputProfile(NodeInputProfileBase):
     # CO2
-    # FIXME does it make sense that this class supports costs?
+    # FIXME does it make sense that this class supports costs? they won't be scaled...
     ...
 
 
@@ -217,15 +278,22 @@ class Node(NodeScalableBase):
         self,
         name,
         inputs,
+        input_commodities,
         costs,
         output_unit,
         convert_factor=1.0,
         input_proportions=None,
+        output_proportions=None,
         storage=None,
     ):
         super().__init__(name, storage, costs, output_unit, convert_factor)
 
         self.inputs = inputs
+
+        # str = equal for each input
+        if isinstance(input_commodities, str):
+            input_commodities = len(inputs) * [input_commodities]
+        self.input_commodities = input_commodities
 
         self.input_flows = None
 
@@ -233,18 +301,11 @@ class Node(NodeScalableBase):
         # the job, but it creates some unnecessary variables
         self.size = None
 
-        if input_proportions is not None:
-            # TODO maybe skip last equation
-            assert input_proportions.keys() == {input_.name for input_ in inputs}, (
-                f"wrong parameter for node {name}: input_proportions needs to be a "
-                "dict with keys matching names of inputs"
-            )
-            # TODO is this check too strict due to numerical errors?
-            assert (
-                sum(input_proportions.values()) == 1.0
-            ), f"wrong parameter for node {name}: input_proportions needs to sum up to 1."
-
+        self._check_proportions_valid_or_missing(
+            self.inputs, input_proportions, input_commodities, "input"
+        )
         self.input_proportions = input_proportions
+        self.output_proportions = output_proportions
 
 
 class Storage:
