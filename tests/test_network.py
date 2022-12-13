@@ -9,6 +9,7 @@ from syfop.util import const_time_series
 
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
+default_solver = 'highs'
 
 
 @all_solvers
@@ -92,7 +93,7 @@ def test_simple_co2_storage(with_storage):
     )
 
     network = Network([wind, hydrogen, co2, methanol_synthesis])
-    network.optimize("gurobi")
+    network.optimize(default_solver)
 
     np.testing.assert_almost_equal(network.model.solution.size_wind, 3.0)
     np.testing.assert_almost_equal(network.model.solution.size_hydrogen, 1.5)
@@ -137,5 +138,5 @@ def test_model_simple_demand():
     )
 
     network = Network([wind, demand])
-    network.optimize("gurobi")
+    network.optimize(default_solver)
     np.testing.assert_almost_equal(network.model.solution.size_wind, 10.0)
