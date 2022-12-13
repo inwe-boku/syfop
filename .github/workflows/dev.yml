@@ -7,9 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-versions: ['3.7', '3.8', '3.9', '3.10']
+        python-versions: ['3.10']  # ['3.7', '3.8', '3.9', '3.10']
 
     steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v2
+
       # Other Github actions to setup conda, not sure which is the best one:
       #    https://github.com/marketplace/actions/setup-miniconda
       #      --> seems to work fine
@@ -37,4 +40,4 @@ jobs:
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Run unit tests
-        run: pytest -m pytest tests
+        run: python -m pytest -k "not gurobi" tests
