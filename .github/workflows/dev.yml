@@ -5,9 +5,11 @@ on: push
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-versions: ['3.10']  # ['3.7', '3.8', '3.9', '3.10']
+
+    # TODO need to check if this really works with conda that way
+    # strategy:
+    #   matrix:
+    #     python-versions: ['3.7', '3.8', '3.9', '3.10']
 
     steps:
       - name: Set up Git repository
@@ -21,17 +23,17 @@ jobs:
       #    https://github.com/marketplace/actions/setup-conda
       #      --> not tested yet
       - name: Cache conda
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          # Increase this value to reset cache if env.yml has not changed
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('etc/example-environment.yml') }}
+          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('env.yml') }}
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: 3.9
+          # python-version: 3.9
           mamba-version: "*"
           activate-environment: syfop
           channels: conda-forge
@@ -39,5 +41,5 @@ jobs:
           environment-file: env.yml
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
-      - name: Run unit tests
+      - name: Run unit tests (skip the ones with Gurobi)
         run: python -m pytest -k "not gurobi" tests
