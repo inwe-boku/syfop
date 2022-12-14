@@ -23,6 +23,18 @@ class NodeBase:
         self.input_proportions = None
         self.output_proportions = None
 
+    def _preprocess_input_commodities(self, inputs, input_commodities):
+        if isinstance(input_commodities, str):
+            input_commodities = len(inputs) * [input_commodities]
+        elif len(inputs) != len(input_commodities):
+            raise ValueError(
+                f"invalid number of input_commodities provided for node '{self.name}': "
+                f"{input_commodities}, does not match number of inputs: "
+                f"{', '.join(input_.name for input_ in inputs)}"
+            )
+
+        return input_commodities
+
     def _check_proportions_valid_or_missing(
         self, nodes, proportions, commodities, input_or_output
     ):
@@ -42,8 +54,8 @@ class NodeBase:
             )
         elif len(set(commodities)) > 1:
             raise ValueError(
-                f"node {self.name} has different {input_or_output} commodities, "
-                f"but no {input_or_output} proportions provided"
+                f"node {self.name} has different {input_or_output}_commodities, "
+                f"but no {input_or_output}_proportions provided"
             )
 
     def _create_input_flows_variables(self, model):
@@ -228,15 +240,12 @@ class NodeOutputProfileBase(NodeBase):
         self.inputs = inputs
 
         # str = equal for each input
-        # XXX code duplication with class Node... :-/
-        if isinstance(input_commodities, str):
-            input_commodities = len(inputs) * [input_commodities]
-        self.input_commodities = input_commodities
+        self.input_commodities = self._preprocess_input_commodities(inputs, input_commodities)
 
         self.output_flows = {name: output_flow}
 
         self._check_proportions_valid_or_missing(
-            self.inputs, input_proportions, input_commodities, "input"
+            self.inputs, input_proportions, self.input_commodities, "input"
         )
         self.input_proportions = input_proportions
 
@@ -293,9 +302,7 @@ class Node(NodeScalableBase):
         self.inputs = inputs
 
         # str = equal for each input
-        if isinstance(input_commodities, str):
-            input_commodities = len(inputs) * [input_commodities]
-        self.input_commodities = input_commodities
+        self.input_commodities = self._preprocess_input_commodities(inputs, input_commodities)
 
         self.input_flows = None
 
@@ -304,7 +311,7 @@ class Node(NodeScalableBase):
         self.size = None
 
         self._check_proportions_valid_or_missing(
-            self.inputs, input_proportions, input_commodities, "input"
+            self.inputs, input_proportions, self.input_commodities, "input"
         )
         self.input_proportions = input_proportions
         self.output_proportions = output_proportions
