@@ -49,16 +49,16 @@ class Network:
         # XXX not sure if we really need this backward connection, also it won't work as soon as
         # we add demand
         for node in nodes:
+            node.outputs = []
+        for node in nodes:
             for input_ in node.inputs:
-                if input_.outputs is None:
-                    input_.outputs = []
                 input_.outputs.append(node)
 
         # output connections are not known when Node objects are created, so we add
         # it to the Node objects here
         for node in nodes:
             if node.output_flows is None:
-                if node.outputs is None:
+                if not node.outputs:
                     # this is a variable for leaves, i.e. final output, not really needed, but
                     # nice to have and used in size constraints
                     node.output_flows = {
