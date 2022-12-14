@@ -17,11 +17,8 @@
 -->
 
 [![MIT License](https://img.shields.io/github/license/inwe-boku/syfop.svg)](https://choosealicense.com/licenses/mit/)
-
-
-<a href="https://github.com/inwe-boku/syfop/actions">
-    <img src="https://github.com/inwe-boku/syfop/actions/workflows/dev.yml/badge.svg" alt="Tests">
-</a>
+[![CI](https://github.com/inwe-boku/syfop/actions/workflows/dev.yml/badge.svg)](https://github.com/inwe-boku/syfop/actions)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 <!--
 <a href="https://inwe-boku.github.io/syfop/">
@@ -31,6 +28,9 @@
 <a href="https://pyup.io/repos/github/lumbric/syfop/">
 <img src="https://pyup.io/repos/github/lumbric/syfop/shield.svg" alt="Updates">
 </a>
+
+get inspiration for more badges here:
+https://raw.githubusercontent.com/PyPSA/PyPSA/master/README.md
 
 -->
 </p>
