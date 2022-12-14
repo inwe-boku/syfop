@@ -9,7 +9,7 @@ from syfop.util import const_time_series
 
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
-default_solver = 'highs'
+default_solver = "highs"
 
 
 @all_solvers
