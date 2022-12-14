@@ -44,6 +44,10 @@ jobs:
           # https://github.com/conda-incubator/setup-miniconda/issues/267
           # use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
-      - name: Run unit tests (skip the ones with Gurobi)
+      - name: Lint wiht flake8 and black
+        shell: bash -l {0}
+        run: flake8 && black --check .
+
+      - name: Run unit tests (except the ones using Gurobi)
         shell: bash -l {0}
         run: python -m pytest -k "not gurobi" tests
