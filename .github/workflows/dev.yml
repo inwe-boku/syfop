@@ -1,4 +1,4 @@
-name: Development build
+name: Dev build
 
 on: push
 
@@ -39,7 +39,9 @@ jobs:
           channels: conda-forge
           channel-priority: strict
           environment-file: env.yml
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          # TODO does this cause troubles with finding packages?
+          # https://github.com/conda-incubator/setup-miniconda/issues/267
+          # use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Run unit tests (skip the ones with Gurobi)
         run: python -m pytest -k "not gurobi" tests
