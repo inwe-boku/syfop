@@ -1,6 +1,5 @@
 import linopy
 import networkx as nx
-import matplotlib.pyplot as plt
 from networkx.drawing.nx_pydot import graphviz_layout
 
 from syfop.node import NodeInputProfileBase
@@ -8,7 +7,6 @@ from syfop.util import timeseries_variable
 
 
 class Network:
-    # basically a list of all technologies
     def __init__(self, nodes):
         all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
         if not (all_input_nodes <= set(nodes)):
@@ -95,6 +93,16 @@ class Network:
         return model
 
     def optimize(self, solver_name="glpk", **kwargs):
+        """Optimize all node sizes: minimize total costs (sum of all (scaled) node costs) with
+        subject to all constraints induced by the network.
+
+        Parameters
+        ----------
+        solver_name : str, optional
+            all solvers supported by
+            [linopy](https://linopy.readthedocs.io/en/latest/solvers.html), by default "glpk"
+
+        """
         # TODO infeasible should raise?
         self.model.solve(solver_name=solver_name, keep_files=True, io_api="direct", **kwargs)
 
@@ -109,11 +117,13 @@ class Network:
         if storage_costs != 0:
             # if there is no technology, storage costs is simply an int and this is not
             # combinable with a linopy expression uargh... :-/
+            # https://github.com/PyPSA/linopy/issues/60
             return technology_costs + storage_costs
         else:
             return technology_costs
 
     def draw(self):
+        """Draw a graphic representation of the network of all nodes and edges."""
         nx.draw(
             self.graph,
             pos=graphviz_layout(self.graph, prog="dot"),  # , args='concentrate=false'),

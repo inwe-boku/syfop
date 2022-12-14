@@ -32,13 +32,14 @@ class NodeBase:
             # TODO maybe skip one input/output, because equality maybe be hard due
             # to numerical errors, see comment below
             assert proportions.keys() == {node.name for node in nodes}, (
-                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to be a "
-                "dict with keys matching names of {input_or_output}s"
+                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to be"
+                f" a dict with keys matching names of {input_or_output}s"
             )
             # TODO is this check too strict due to numerical errors?
-            assert (
-                sum(proportions.values()) == 1.0
-            ), f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to sum up to 1."
+            assert sum(proportions.values()) == 1.0, (
+                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to sum "
+                "up to 1."
+            )
         elif len(set(commodities)) > 1:
             raise ValueError(
                 f"node {self.name} has different {input_or_output} commodities, "
@@ -127,6 +128,7 @@ class NodeBase:
 
         # linopy wants all variables on one side and the constants on the other side: this is a
         # workaround if rhs is not a constant.
+        # will be obsolete as soon as this is implemented: https://github.com/PyPSA/linopy/issues/60
         # Note that rhs is only a constant if self is an instance of NodeInputProfileBase with
         # only one input, which is an xr.DataArray.
         if not isinstance(lhs, linopy.Variable) and not isinstance(lhs, linopy.LinearExpression):
