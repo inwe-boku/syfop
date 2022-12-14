@@ -92,7 +92,7 @@ class Network:
 
         return model
 
-    def optimize(self, solver_name="glpk", **kwargs):
+    def optimize(self, solver_name="highs", **kwargs):
         """Optimize all node sizes: minimize total costs (sum of all (scaled) node costs) with
         subject to all constraints induced by the network.
 
@@ -100,11 +100,12 @@ class Network:
         ----------
         solver_name : str, optional
             all solvers supported by
-            [linopy](https://linopy.readthedocs.io/en/latest/solvers.html), by default "glpk"
+            [linopy](https://linopy.readthedocs.io/en/latest/solvers.html), by default "highs"
 
         """
         # TODO infeasible should raise?
-        self.model.solve(solver_name=solver_name, keep_files=True, io_api="direct", **kwargs)
+        io_api = "direct" if solver_name in ("gurobi", "highs") else "lp"
+        self.model.solve(solver_name=solver_name, keep_files=True, io_api=io_api, **kwargs)
 
     def total_costs(self):
         technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
