@@ -55,7 +55,7 @@ class Network:
                 input_.outputs.append(node)
 
         # output connections are not known when Node objects are created, so we add
-        # it to the Node objects here
+        # it to the Node objects here, except for nodes which are NodeOutputProfileBase
         for node in nodes:
             if node.output_flows is None:
                 if not node.outputs:
