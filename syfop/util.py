@@ -1,7 +1,6 @@
 import numpy as np
-import xarray as xr
 import pandas as pd
-
+import xarray as xr
 
 # TODO this should be an input for Flow and maybe use a datetime range as coords
 NUM_TIME_STEPS = 8760
@@ -52,7 +51,7 @@ def print_constraints(m):
     Print equations of model `m` in a more or less readable form.
     """
 
-    from linopy.io import fill_by, float_to_str, int_to_str, concatenate, asarray
+    from linopy.io import asarray, concatenate, fill_by, float_to_str, int_to_str
 
     m.constraints.sanitize_missings()
     kwargs = dict(broadcast_like="vars", filter_missings=True)
@@ -76,13 +75,13 @@ def print_constraints(m):
         new_con_b = concatenate([asarray([True]), diff_con])
         end_of_con_b = concatenate([diff_con, asarray([True])])
 
-        l = fill_by(v.shape, new_con_b, "\n" + n + int_to_str(l_) + ":\n")
+        l_filled = fill_by(v.shape, new_con_b, "\n" + n + int_to_str(l_) + ":\n")
         s = fill_by(v.shape, end_of_con_b, "\n" + s_.astype(object) + "\n")
         r = fill_by(v.shape, end_of_con_b, float_to_str(r_, ensure_sign=False))
 
         varname = np.frompyfunc(lambda i: m.variables.get_name_by_label(i) + "%i" % i, 1, 1)
 
-        constraints = l + float_to_str(c) + " * " + varname(v) + s + r
+        constraints = l_filled + float_to_str(c) + " * " + varname(v) + s + r
 
         print("\n".join(constraints))
         print()
