@@ -2,7 +2,7 @@ import linopy
 import networkx as nx
 from networkx.drawing.nx_pydot import graphviz_layout
 
-from syfop.node import NodeInputProfileBase
+from syfop.node import NodeInputProfileBase, NodeOutputProfileBase
 from syfop.util import timeseries_variable
 
 
@@ -25,6 +25,8 @@ class Network:
         for node in nodes:
             if isinstance(node, NodeInputProfileBase):
                 color = "red"
+            elif isinstance(node, NodeOutputProfileBase):
+                color = "black"
             else:
                 color = "blue"
 
