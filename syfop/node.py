@@ -237,6 +237,7 @@ class NodeOutputProfileBase(NodeBase):
     ):
         super().__init__(name, storage, costs, output_unit)
 
+        # TODO add check that inputs does not contain nodes of type NodeOutputProfileBase?
         self.inputs = inputs
 
         # str = equal for each input
@@ -299,6 +300,7 @@ class Node(NodeScalableBase):
     ):
         super().__init__(name, storage, costs, output_unit, convert_factor)
 
+        # TODO add check that inputs does not contain nodes of type NodeOutputProfileBase?
         self.inputs = inputs
 
         # str = equal for each input
