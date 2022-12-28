@@ -106,7 +106,7 @@ node1 = NodeScalableInputProfile(
 
 ```python
 node2 = NodeFixInputProfile(
-    name="co2",
+    name="node2",
     costs=0,
     input_flow=random_time_series(),
     output_unit="t",
@@ -127,18 +127,17 @@ node3 = Node(
 
 ```python
 node4 = Node(
-    name="methanol_synthesis",
-    inputs=[co2, hydrogen],
+    name="node4",
+    inputs=[node1, node2],
     input_commodities=["co2", "hydrogen"],
     costs=8,
     output_unit="t",
-    input_proportions={"co2": 0.25, "hydrogen": 0.75},
+    input_proportions={"node1": 0.25, "node2": 0.75},
 )
 ```
 
 ```python
 node5 = Node(
-        node4,
     name="node5",
     inputs=[node2, node3],
     input_commodities="electricity",
