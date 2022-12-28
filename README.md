@@ -1,26 +1,24 @@
-# syfop
+# syfop - Synthetic fuel optimizer
+
+
+[![MIT License](https://img.shields.io/github/license/inwe-boku/syfop.svg)](https://choosealicense.com/licenses/mit/)
+[![CI](https://github.com/inwe-boku/syfop/actions/workflows/dev.yml/badge.svg)](https://github.com/inwe-boku/syfop/actions)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 
 <!--
  [![Version](http://img.shields.io/pypi/v/ppw?color=brightgreen)](https://pypi.python.org/pypi/ppw)
 [![CI Status](https://github.com/zillionare/python-project-wizard/actions/workflows/release.yml/badge.svg)](https://github.com/zillionare/python-project-wizard)
 [![Dowloads](https://img.shields.io/pypi/dm/ppw)](https://pypi.org/project/ppw/)
 ![Python Versions](https://img.shields.io/pypi/pyversions/ppw)
-[![Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 -->
 
 <!--
 <p align="center">
 <a href="https://pypi.python.org/pypi/syfop">
-    <img src="https://img.shields.io/pypi/v/syfop.svg"
-        alt = "Release Status">
+    <img src="https://img.shields.io/pypi/v/syfop.svg" alt = "Release Status">
 </a>
--->
 
-[![MIT License](https://img.shields.io/github/license/inwe-boku/syfop.svg)](https://choosealicense.com/licenses/mit/)
-[![CI](https://github.com/inwe-boku/syfop/actions/workflows/dev.yml/badge.svg)](https://github.com/inwe-boku/syfop/actions)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
-<!--
 <a href="https://inwe-boku.github.io/syfop/">
     <img src="https://img.shields.io/website/https/inwe-boku.github.io/syfop/index.html.svg?label=docs&down_message=unavailable&up_message=available" alt="Documentation Status">
 </a>
@@ -33,10 +31,6 @@ get inspiration for more badges here:
 https://raw.githubusercontent.com/PyPSA/PyPSA/master/README.md
 
 -->
-</p>
-
-
-Synthetic fuel optimizer
 
 <!--
  * Documentation: <https://inwe-boku.github.io/syfop/>
@@ -52,48 +46,121 @@ see [demo.ipynb](notebooks/demo.ipynb)
 Short introduction
 ------------------
 
-`syfop` models a network where commodities run through nodes representing certain types of technologies. In a second step, sizes of the nodes are optimized to be cost optimal with respect to constraints introduced by the network. The optimization uses discrete time series for all nodes on as pre-specified time interval. One can think of a node being a wind park, where hourly electricity is given for one year, a second node defines the demand for each hour. `syfop` then determines the optimal size of the wind park, such that demand is satisfied in each hour of the year.
+`syfop` allows the user to model a network, where commodities run through nodes representing
+certain types of technologies. In a second step, sizes of the nodes are optimized to be cost
+optimal with respect to constraints introduced by the network. The optimization uses discrete time
+series for all nodes on as pre-specified time interval.
 
-In more detail, this is described as follows. We define a network of nodes, which are connected using directed edges. Each node has
+A simple example for such a network consists of only two nodes. The first node represents a wind
+park, where an hourly electricity generation profile is pre-specified (e.g. for one year). The
+second node defines the demand for each hour in the same time interval. The nodes are connected
+with an edge, which represents the commodity _electricity_. `syfop` then determines the optimal
+size of the wind park, such that demand is satisfied in each hour of the year, assuming that costs
+and electricity generation are scaled linearly by its size.
 
-a size and costs, which are scaled linearly by its size.
-
-Nodes
-
-Nodes are connected with direct egdes
-
-
-each edge represents the transmission off a certain commodity
-
-sum of all inputs of a node equals the sum of all outputs. (respecting the convertion factor)
-
-input / output profiles
-
-input proportions
-
-some nodes have a size, some a cost
-
-total cost is minimize respecting all constraints
+In more detail, this is described as follows. We define a network of nodes, which are connected
+using directed edges (cycles are not allowed here, which means that the network is a [directed
+acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph)). Each node has several
+attributes, such as size and costs per unit of size. Each edge represents the transmission of a
+certain commodity between two nodes. The commodity is then either entirely used in the second node,
+which means that it does not have any other outgoing edges to other nodes, or it is converted to
+other commodities and transmitted to other nodes. This means that the sum of all inputs needs to
+equal all outputs in every time step. The conversion is defined linearly using a conversion factor.
 
 
 How to install
 --------------
 
+At the moment there is no package built for syfop. Use conda to setup an environment and then use
+`syfop` directly from a cloned Git repository:
 
-    pre-commit install
+    git clone https://github.com/inwe-boku/syfop/
     conda update -f env.yml
+    conda activate syfop
+    pre-commit install
 
 
-install gurobipy
+The conda environment contains the solver HiGHs. Other [solvers](https://linopy.readthedocs.io/en/latest/solvers.html) are supported too, but not included in the conda environment.
+
+<!--
+To install Gurobiy:
+
+https://www.gurobi.com/downloads/gurobi-software/
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/gurobi1000/linux64/lib
+export GRB_LICENSE_FILE="/opt/gurobi810/gurobi.lic"
+-->
 
 
 How to use
 ----------
 
+```python
+node1 = NodeScalableInputProfile(
+    name="node1",
+    input_flow=random_time_series(),
+    costs=10,
+    output_unit="MW",
+)
+```
 
+```python
+node2 = NodeFixInputProfile(
+    name="co2",
+    costs=0,
+    input_flow=random_time_series(),
+    output_unit="t",
+)
 
-    node1 = Node(
-        name="node1",
-    )
+```
 
-    network = Network([node1])
+```python
+node3 = Node(
+    name="node3",
+    inputs=[node1, node2],
+    input_commodities="electricity",
+    costs=42,
+    output_unit="t",
+)
+
+```
+
+```python
+node4 = Node(
+    name="methanol_synthesis",
+    inputs=[co2, hydrogen],
+    input_commodities=["co2", "hydrogen"],
+    costs=8,
+    output_unit="t",
+    input_proportions={"co2": 0.25, "hydrogen": 0.75},
+)
+```
+
+```python
+node5 = Node(
+        node4,
+    name="node5",
+    inputs=[node2, node3],
+    input_commodities="electricity",
+    costs=7,
+    output_unit="t",
+    storage=Storage(
+        costs=200,
+        max_charging_speed=0.2,
+        storage_loss=0.0,
+        charging_loss=0.001
+    ),
+)
+```
+
+```python
+network = Network(
+    [
+        node1,
+        node2,
+        node3,
+        node4,
+        node5,
+    ]
+)
+```
