@@ -49,8 +49,8 @@ class NodeBase:
             )
             # TODO is this check too strict due to numerical errors?
             assert sum(proportions.values()) == 1.0, (
-                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to sum "
-                "up to 1."
+                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to "
+                "sum up to 1."
             )
         elif len(set(commodities)) > 1:
             raise ValueError(
@@ -58,20 +58,24 @@ class NodeBase:
                 f"but no {input_or_output}_proportions provided"
             )
 
-    def _create_input_flows_variables(self, model):
+    def _create_input_flows_variables(self, model, time_coords):
         # each input_flow is a variable (representing the amount of energy in the edge coming from
         # input to self)
         self.input_flows = {
-            input_.name: timeseries_variable(model, f"flow_{input_.name}_{self.name}")
+            input_.name: timeseries_variable(model, time_coords, f"flow_{input_.name}_{self.name}")
             for input_ in self.inputs
         }
 
-    def _create_storage_variables(self, model):
+    def _create_storage_variables(self, model, time_coords):
         """This method is not supposed to be called if the node does not have a storage."""
         self.storage.size = model.add_variables(name=f"size_storage_{self.name}", lower=0)
-        self.storage.level = timeseries_variable(model, f"storage_level_{self.name}")
-        self.storage.charge = timeseries_variable(model, f"storage_charge_{self.name}")
-        self.storage.discharge = timeseries_variable(model, f"storage_discharge_{self.name}")
+        self.storage.level = timeseries_variable(model, time_coords, f"storage_level_{self.name}")
+        self.storage.charge = timeseries_variable(
+            model, time_coords, f"storage_charge_{self.name}"
+        )
+        self.storage.discharge = timeseries_variable(
+            model, time_coords, f"storage_discharge_{self.name}"
+        )
 
     def _create_proportion_constraints(self, model, proportions, flows):
         for name, proportion in proportions.items():
@@ -154,11 +158,11 @@ class NodeBase:
 
         model.add_constraints(lhs == rhs, name=f"inout_flow_balance_{self.name}")
 
-    def create_variables(self, model):
-        self._create_input_flows_variables(model)
+    def create_variables(self, model, time_coords):
+        self._create_input_flows_variables(model, time_coords)
 
         if self.storage is not None:
-            self._create_storage_variables(model)
+            self._create_storage_variables(model, time_coords)
 
     def create_constraints(self, model):
         self._create_constraint_inout_flow_balance(model)
@@ -176,8 +180,8 @@ class NodeBase:
 
 
 class NodeScalableBase(NodeBase):
-    def create_variables(self, model):
-        super().create_variables(model)
+    def create_variables(self, model, time_coords):
+        super().create_variables(model, time_coords)
 
         # TODO atm some nodes should not have variables, but setting costs to 0 does the
         # job too
@@ -218,7 +222,7 @@ class NodeInputProfileBase(NodeBase):
         # but note: this is wrong for co2 (costs=0), i.e. only for scalable fixed input
         self.input_flows = {"": input_flow}
 
-    def _create_input_flows_variables(self, model):
+    def _create_input_flows_variables(self, model, time_coords):
         # nothing to do here, input is given via profile
         ...
 
@@ -266,8 +270,8 @@ class NodeFixOutputProfile(NodeOutputProfileBase):
 
 class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
     # Wind, PV, ...
-    def create_variables(self, model):
-        super().create_variables(model)
+    def create_variables(self, model, time_coords):
+        super().create_variables(model, time_coords)
         # if input_flows is not None, we have a FixedInput, which we need to scale only
         # if there is a size defined, otherwise it will stay as scalar
         self.input_flows[""] = self.size * self.input_flows[""]
