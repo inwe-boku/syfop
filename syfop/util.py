@@ -2,50 +2,36 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-# TODO this should be an input for Flow and maybe use a datetime range as coords
-NUM_TIME_STEPS = 8760
-NUM_LOCATIONS = 3
-time = pd.date_range(2020, freq="h", periods=NUM_TIME_STEPS)
+DEFAULT_NUM_TIME_STEPS = 8760
 
 
-def timeseries_variable(model, name):
+def const_time_series(value, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_year=2020):
+    if isinstance(time_coords, int):
+        time_coords = pd.date_range(time_coords_year, freq="h", periods=time_coords)
+
+    return xr.DataArray(
+        value * np.ones(len(time_coords)),
+        dims=("time",),
+        coords={"time": time_coords},
+    )
+
+
+def timeseries_variable(model, time_coords, name):
     return model.add_variables(
         name=name,
-        lower=xr.DataArray(
-            np.zeros((NUM_TIME_STEPS, NUM_LOCATIONS)),
-            dims=("time", "locations"),
-            coords={
-                "time": np.arange(NUM_TIME_STEPS),
-                "locations": np.arange(NUM_LOCATIONS),
-            },
-        ),
+        lower=const_time_series(0.0, time_coords),
     )
 
 
-def random_time_series():
+def random_time_series(time_coords=DEFAULT_NUM_TIME_STEPS):
     np.random.seed(42)
-    return xr.DataArray(
-        np.random.rand(NUM_TIME_STEPS, NUM_LOCATIONS),
-        dims=("time", "locations"),
-        coords={
-            "time": np.arange(NUM_TIME_STEPS),
-            "locations": np.arange(NUM_LOCATIONS),
-        },
-    )
+    if isinstance(time_coords, int):
+        len_time_coords = len(time_coords)
+    else:
+        len_time_coords = len(time_coords)
+    return const_time_series(np.random.rand(len_time_coords), time_coords)
 
 
-def const_time_series(value):
-    return xr.DataArray(
-        value * np.ones((NUM_TIME_STEPS, NUM_LOCATIONS)),
-        dims=("time", "locations"),
-        coords={
-            "time": np.arange(NUM_TIME_STEPS),
-            "locations": np.arange(NUM_LOCATIONS),
-        },
-    )
-
-
-# %%
 def print_constraints(m):
     """
     Print equations of model `m` in a more or less readable form.
@@ -85,6 +71,3 @@ def print_constraints(m):
 
         print("\n".join(constraints))
         print()
-
-
-# %%

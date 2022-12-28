@@ -1,19 +1,25 @@
 import linopy
 import networkx as nx
+import pandas as pd
 from networkx.drawing.nx_pydot import graphviz_layout
 
 from syfop.node import NodeInputProfileBase, NodeOutputProfileBase
-from syfop.util import timeseries_variable
+from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
 class Network:
-    def __init__(self, nodes):
+    def __init__(self, nodes, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_year=2020):
         all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
         if not (all_input_nodes <= set(nodes)):
             raise ValueError(
                 "nodes used as input node, but missing in list of nodes passed to "
                 f"Network(): {', '.join(node.name for node in (all_input_nodes - set(nodes)))}"
             )
+
+        # XXX minor code duplication with util.const_time_series()
+        if isinstance(time_coords, int):
+            time_coords = pd.date_range(time_coords_year, freq="h", periods=time_coords)
+        self.time_coords = time_coords
 
         self.nodes = nodes
         self.nodes_dict = {node.name: node for node in nodes}
@@ -46,7 +52,7 @@ class Network:
         model = linopy.Model()
 
         for node in nodes:
-            node.create_variables(model)
+            node.create_variables(model, self.time_coords)
 
         # XXX not sure if we really need this backward connection, also it won't work as soon as
         # we add demand
@@ -64,7 +70,9 @@ class Network:
                     # this is a variable for leaves, i.e. final output, not really needed, but
                     # nice to have and used in size constraints
                     node.output_flows = {
-                        node.name: timeseries_variable(model, f"flow_{node.name}")
+                        node.name: timeseries_variable(
+                            model, self.time_coords, f"flow_{node.name}"
+                        )
                     }
                 else:
                     node.output_flows = {
