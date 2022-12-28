@@ -134,7 +134,6 @@ exclude = '''
   | build
   | dist
   | \.history
-  | \.github
   | \.pytest_cache
   | \.ipynb_checkpoints
 )/
