@@ -26,7 +26,7 @@ def timeseries_variable(model, time_coords, name):
 def random_time_series(time_coords=DEFAULT_NUM_TIME_STEPS):
     np.random.seed(42)
     if isinstance(time_coords, int):
-        len_time_coords = len(time_coords)
+        len_time_coords = time_coords
     else:
         len_time_coords = len(time_coords)
     return const_time_series(np.random.rand(len_time_coords), time_coords)
