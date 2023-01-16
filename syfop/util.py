@@ -36,7 +36,10 @@ def print_constraints(m):
     """
     Print equations of model `m` in a more or less readable form.
     """
+    print(constraints_to_str(m))
 
+
+def constraints_to_str(m):
     from linopy.io import asarray, concatenate, fill_by, float_to_str, int_to_str
 
     m.constraints.sanitize_missings()
@@ -52,6 +55,8 @@ def print_constraints(m):
     names = m.constraints.labels.data_vars
 
     iterate = zip(names, labels, vars, coeffs, labels_, sign_, rhs_)
+
+    out_str = ""
 
     for (n, l, v, c, l_, s_, r_) in iterate:
         if not c.size:
@@ -69,5 +74,6 @@ def print_constraints(m):
 
         constraints = l_filled + float_to_str(c) + " * " + varname(v) + s + r
 
-        print("\n".join(constraints))
-        print()
+        out_str += "\n".join(constraints) + "\n"
+
+    return out_str
