@@ -34,11 +34,15 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           # python-version: 3.9
-          mamba-version: "*"
-          activate-environment: syfop
-          channels: conda-forge
+          # mamba-version: "*"
+          # channels: conda-forge
           # TODO might be a good idea, but does not work...
           # channel-priority: strict
+          # use Mambaforge to avoid weird conda setup issue:
+          # https://github.com/conda-incubator/setup-miniconda/issues/116#issuecomment-1384648777
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          activate-environment: syfop
           environment-file: env.yml
           # TODO does this cause troubles with finding packages?
           # https://github.com/conda-incubator/setup-miniconda/issues/267
