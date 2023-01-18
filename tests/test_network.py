@@ -1,15 +1,12 @@
-import numpy as np
 import pytest
-
+import numpy as np
 from syfop.network import Network
-from syfop.node import (
-    Node,
-    NodeFixInputProfile,
-    NodeFixOutputProfile,
-    NodeScalableInputProfile,
-    Storage,
-)
+from syfop.node import Node, NodeFixOutputProfile
+from syfop.node import Storage
+from syfop.node import NodeFixInputProfile
+from syfop.node import NodeScalableInputProfile
 from syfop.util import const_time_series
+
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
 default_solver = "highs"
@@ -98,19 +95,15 @@ def test_simple_co2_storage(with_storage):
     network = Network([wind, hydrogen, co2, methanol_synthesis])
     network.optimize(default_solver)
 
-    np.testing.assert_almost_equal(network.model.solution.size_wind, 3.0, decimal=3)
-    np.testing.assert_almost_equal(network.model.solution.size_hydrogen, 1.5, decimal=3)
-    np.testing.assert_almost_equal(network.model.solution.size_methanol_synthesis, 2.0, decimal=3)
-    np.testing.assert_array_almost_equal(network.model.solution.flow_wind_hydrogen, 1.5, decimal=3)
+    np.testing.assert_almost_equal(network.model.solution.size_wind, 3.0)
+    np.testing.assert_almost_equal(network.model.solution.size_hydrogen, 1.5)
+    np.testing.assert_almost_equal(network.model.solution.size_methanol_synthesis, 2.0)
+    np.testing.assert_array_almost_equal(network.model.solution.flow_wind_hydrogen, 1.5)
+    np.testing.assert_array_almost_equal(network.model.solution.flow_co2_methanol_synthesis, 0.5)
     np.testing.assert_array_almost_equal(
-        network.model.solution.flow_co2_methanol_synthesis, 0.5, decimal=3
+        network.model.solution.flow_hydrogen_methanol_synthesis, 1.5
     )
-    np.testing.assert_array_almost_equal(
-        network.model.solution.flow_hydrogen_methanol_synthesis, 1.5, decimal=3
-    )
-    np.testing.assert_array_almost_equal(
-        network.model.solution.flow_methanol_synthesis, 2.0, decimal=3
-    )
+    np.testing.assert_array_almost_equal(network.model.solution.flow_methanol_synthesis, 2.0)
 
 
 def test_missing_node():
