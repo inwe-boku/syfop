@@ -125,13 +125,13 @@ class Network:
             if hasattr(node, "storage") and node.storage is not None
         )
 
-        if storage_costs != 0:
+        if isinstance(storage_costs, int):
             # if there is no technology, storage costs is simply an int and this is not
             # combinable with a linopy expression uargh... :-/
             # https://github.com/PyPSA/linopy/issues/60
-            return technology_costs + storage_costs
-        else:
             return technology_costs
+        else:
+            return technology_costs + storage_costs
 
     def draw(self):
         """Draw a graphic representation of the network of all nodes and edges."""
