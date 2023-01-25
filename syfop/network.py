@@ -1,3 +1,5 @@
+import time
+
 import linopy
 import networkx as nx
 import pandas as pd
@@ -114,8 +116,13 @@ class Network:
 
         """
         # TODO infeasible should raise?
+
+        t0 = time.time()
+
         io_api = "direct" if solver_name in ("gurobi", "highs") else "lp"
         self.model.solve(solver_name=solver_name, keep_files=True, io_api=io_api, **kwargs)
+
+        print("Solving time: ", time.time() - t0)
 
     def total_costs(self):
         technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
