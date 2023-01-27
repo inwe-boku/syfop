@@ -131,7 +131,8 @@ class NodeBase:
 
         # linopy wants all variables on one side and the constants on the other side: this is a
         # workaround if rhs is not a constant.
-        # will be obsolete as soon as this is implemented: https://github.com/PyPSA/linopy/issues/60
+        # will be obsolete as soon as this is implemented:
+        #   https://github.com/PyPSA/linopy/issues/60
         # Note that rhs is only a constant if self is an instance of NodeInputProfileBase with
         # only one input, which is an xr.DataArray.
         if not isinstance(lhs, linopy.Variable) and not isinstance(lhs, linopy.LinearExpression):
@@ -256,7 +257,12 @@ class NodeFixOutputProfile(NodeOutputProfileBase):
 
 
 class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
-    # Wind, PV, ...
+    """A given input profile is scaled by a size variable.
+
+    Use cases: wind or PV time series as capacity factors and size is the installed capacity.
+
+    """
+
     def create_variables(self, model, time_coords):
         super().create_variables(model, time_coords)
         # if input_flows is not None, we have a FixedInput, which we need to scale only
@@ -311,6 +317,13 @@ class Node(NodeScalableBase):
 
 
 class Storage:
+    """A ``Storage`` can be attached to a node to store a certain amount of the output commodity
+    for later time stamps. A storage has a size variable, which is measured in units of the output
+    commodity of its node. Storage for nodes with multiple output commodities are not supported at
+    the moment.
+
+    """
+
     # note: atm this is not a node
     def __init__(self, costs, max_charging_speed, storage_loss, charging_loss):
         self.costs = costs  # per size
