@@ -104,37 +104,24 @@ class NodeBase:
             name=f"max_discharging_speed_{self.name}",
         )
         model.add_constraints(level - size <= 0, name=f"storage_max_level_{self.name}")
-        model.add_constraints(
-            level.isel(time=0)
-            - (1 - self.storage.charging_loss) * charge.isel(time=0)
-            + discharge.isel(time=0)
-            == 0,
-            name=f"storage_level_balance_t0_{self.name}",
-        )
+
+        # Using roll(time=1) we use the last level as base level for the first time stamp. This is
+        # probably the most reasonable thing to do, because leaving start/end level completely free
+        # can lead to undesired results, such as starting with a huge filled storage but ending
+        # with an empty one.
+        # We can assume that at some point the storage should be empty, otherwise it could be built
+        # smaller. But the time stamp when storage is empty is not known at this point, therefore
+        # connecting start and end level is a better solution.
         model.add_constraints(
             (
                 level
-                - (1 - self.storage.storage_loss) * level.shift(time=1)
+                - (1 - self.storage.storage_loss) * level.roll(time=1)
                 - (1 - self.storage.charging_loss) * charge
                 + discharge
-            ).isel(time=slice(1, None))
+            )
             == 0,
             name=f"storage_level_balance_{self.name}",
         )
-        # XXX should we start with empty storage?
-        # model.add_constraints(level.isel(time=0) == 0)
-
-        # storage[0] == 0  # XXX is this correct to start with empty storage?
-        # storage[t] - storage[t-1] < charging_speed
-        # storage[t-1] - storage[t] < discharging_speed
-        # storage[t] < size
-
-        # for all time stamps t:
-        # sum(input_flows)[t] == sum(output_flows.items())[t] + eff * (storage[t] -
-        #   storage[t-1]) + storage_loss * storage[t]
-
-        # storage_loss: share of lost storage per time stamp
-        # eff: charge and discharge efficiency
 
     def _create_constraint_inout_flow_balance(self, model):
         """Add constraint: sum of inputs == sum of outputs."""
