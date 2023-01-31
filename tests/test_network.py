@@ -1,12 +1,15 @@
-import pytest
 import numpy as np
-from syfop.network import Network
-from syfop.node import Node, NodeFixOutputProfile
-from syfop.node import Storage
-from syfop.node import NodeFixInputProfile
-from syfop.node import NodeScalableInputProfile
-from syfop.util import const_time_series
+import pytest
 
+from syfop.network import Network
+from syfop.node import (
+    Node,
+    NodeFixInputProfile,
+    NodeFixOutputProfile,
+    NodeScalableInputProfile,
+    Storage,
+)
+from syfop.util import const_time_series
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
 default_solver = "highs"
@@ -140,3 +143,32 @@ def test_model_simple_demand():
     network = Network([wind, demand])
     network.optimize(default_solver)
     np.testing.assert_almost_equal(network.model.solution.size_wind, 10.0)
+
+
+@pytest.mark.parametrize("wrong_length", [False, True])
+def test_incosistent_time_coords(wrong_length):
+    """If a node is used as input but not passed to the Network constructor, this is an error.
+    This might change in future."""
+    if wrong_length:
+        time_coords_params = {"time_coords": 42}
+        error_msg_pattern = "has an input flow with length"
+    else:
+        time_coords_params = {"time_coords_year": 2019}
+        error_msg_pattern = "wind has an input flow with time_coords different from the Network"
+
+    wind = NodeScalableInputProfile(
+        name="wind",
+        input_flow=const_time_series(42.0, **time_coords_params),
+        costs=1,
+        output_unit="MW",
+    )
+    electricity = Node(
+        name="electricity",
+        inputs=[wind],
+        input_commodities="electricity",
+        costs=0,
+        output_unit="MW",
+    )
+
+    with pytest.raises(ValueError, match=error_msg_pattern):
+        Network([wind, electricity])
