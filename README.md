@@ -3,6 +3,7 @@
 
 [![MIT License](https://img.shields.io/github/license/inwe-boku/syfop.svg)](https://choosealicense.com/licenses/mit/)
 [![CI](https://github.com/inwe-boku/syfop/actions/workflows/dev.yml/badge.svg)](https://github.com/inwe-boku/syfop/actions)
+[![Coverage Status](https://coveralls.io/repos/github/inwe-boku/syfop/badge.svg)](https://coveralls.io/github/inwe-boku/syfop)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 
