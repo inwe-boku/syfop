@@ -54,9 +54,10 @@ jobs:
 
       - name: Run unit tests (except the ones using Gurobi)
         shell: bash -l {0}
-        run: python -m pytest -k "not gurobi" tests
+        run: python -m pytest --cov=. --cov-report=lcov -k "not gurobi" tests
 
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov
