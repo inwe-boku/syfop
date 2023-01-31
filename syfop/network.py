@@ -124,6 +124,17 @@ class Network:
 
         return model
 
+    def _check_storage_level_zero(self):
+        """This is a basic plausibility check. A storage which is never full or never empty
+        could be replaced by a smaller storage, which would be advantageous if costs are
+        positive. So something is fishy if this check fails."""
+        for node in self.nodes:
+            if hasattr(node, "storage") and node.storage is not None and node.storage.costs > 0:
+                storage_level = self.model.solution[f"storage_level_{node.name}"]
+                storage_size = self.model.solution[f"size_storage_{node.name}"]
+                assert storage_level.min() == 0.0, f"storage for {node.name} never empty"
+                assert storage_level.max() == storage_size, f"storage for {node.name} never full"
+
     def optimize(self, solver_name="highs", **kwargs):
         """Optimize all node sizes: minimize total costs (sum of all (scaled) node costs) with
         subject to all constraints induced by the network.
@@ -141,6 +152,8 @@ class Network:
 
         io_api = "direct" if solver_name in ("gurobi", "highs") else "lp"
         self.model.solve(solver_name=solver_name, keep_files=True, io_api=io_api, **kwargs)
+
+        self._check_storage_level_zero()
 
         print("Solving time: ", time.time() - t0)
 
