@@ -9,7 +9,7 @@ from syfop.node import (
     NodeScalableInputProfile,
     Storage,
 )
-from syfop.util import const_time_series
+from syfop.util import DEFAULT_NUM_TIME_STEPS, const_time_series
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
 default_solver = "highs"
@@ -125,22 +125,30 @@ def test_missing_node():
         Network([electricity])
 
 
-def test_model_simple_demand():
-    """Just two nodes, constant wind and constant demand. Wind capacity needs to be scaled to
-    meet demand."""
+def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS):
     wind = NodeScalableInputProfile(
-        name="wind", input_flow=const_time_series(0.5), costs=1, output_unit="MW"
+        name="wind",
+        input_flow=const_time_series(0.5, time_coords=time_coords),
+        costs=1,
+        output_unit="MW",
     )
     demand = NodeFixOutputProfile(
         name="demand",
         inputs=[wind],
         input_commodities="electricity",
-        output_flow=const_time_series(5.0),
+        output_flow=const_time_series(5.0, time_coords=time_coords),
         costs=0,
         output_unit="MW",
     )
 
-    network = Network([wind, demand])
+    network = Network([wind, demand], time_coords=time_coords)
+    return network
+
+
+def test_model_simple_demand():
+    """Just two nodes, constant wind and constant demand. Wind capacity needs to be scaled to
+    meet demand."""
+    network = simple_demand_network()
     network.optimize(default_solver)
     np.testing.assert_almost_equal(network.model.solution.size_wind, 10.0)
 
