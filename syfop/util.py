@@ -6,6 +6,21 @@ DEFAULT_NUM_TIME_STEPS = 8760
 
 
 def const_time_series(value, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_year=2020):
+    """Creates a constant time series as DataArray.
+
+    Parameters
+    ----------
+
+    value : float
+        constant value used for each time stamp
+    time_coords : int or array-like
+        Number of hourly time stamps generated or array used as time coordinates. Does not need to
+        be of a date time type, but probably makes sense.
+    time_coords_year : int
+        Year used for generating hourly time stamps. This is ignored if ``time_coords`` is not of
+        type int.
+
+    """
     if isinstance(time_coords, int):
         time_coords = pd.date_range(time_coords_year, freq="h", periods=time_coords)
 

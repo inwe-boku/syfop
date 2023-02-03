@@ -59,8 +59,9 @@ class NodeBase:
             )
 
     def _create_input_flows_variables(self, model, time_coords):
-        # each input_flow is a variable (representing the amount of energy in the edge coming from
-        # input to self)
+        """Each input flow is a variable (representing the amount of energy in the edge coming from
+        input to self). Later we will store the same variables also as output_flows in the nodes in
+        self.inputs."""
         self.input_flows = {
             input_.name: timeseries_variable(model, time_coords, f"flow_{input_.name}_{self.name}")
             for input_ in self.inputs
@@ -124,7 +125,7 @@ class NodeBase:
         )
 
     def _create_constraint_inout_flow_balance(self, model):
-        """Add constraint: sum of inputs == sum of outputs."""
+        """Add constraint: sum of inputs == sum of outputs for this node for each time step."""
         # sum of output flows (left-hand-side of equation) and inputs must be equal:
         lhs = sum(self.output_flows.values())
         rhs = self.convert_factor * sum(self.input_flows.values())
