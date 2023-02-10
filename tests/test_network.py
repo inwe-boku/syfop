@@ -55,6 +55,11 @@ def test_expensive_solar_pv(solver):
     assert network.model.solution.size_wind == 30.0
     assert network.model.solution.size_solar_pv == 0.0
 
+    co2 = network.model.solution.flow_co2_methanol_synthesis
+    electricity = network.model.solution.flow_electricity_methanol_synthesis
+    np.testing.assert_array_almost_equal(0.25 * (co2 + electricity), co2)
+    np.testing.assert_array_almost_equal(0.75 * (co2 + electricity), electricity)
+
 
 @pytest.mark.parametrize("with_storage", [False, True])
 def test_simple_co2_storage(with_storage):
