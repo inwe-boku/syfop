@@ -61,8 +61,8 @@ def test_expensive_solar_pv(solver):
     np.testing.assert_array_almost_equal(0.75 * (co2 + electricity), electricity)
 
 
-@pytest.mark.parametrize("with_storage", [False, True])
-def test_simple_co2_storage(with_storage):
+@pytest.mark.parametrize("storage_type", ["co2_storage", "no_storage"])
+def test_simple_co2_storage(storage_type):
     """A simple methanol synthesis network with wind only to produce hydrogen.
 
     The optimum should be identical in both scenarios:
@@ -71,13 +71,23 @@ def test_simple_co2_storage(with_storage):
     """
 
     wind_flow = const_time_series(0.5)
-    co2_flow = const_time_series(1.0)
-    if with_storage:
+    co2_flow = const_time_series(0.5)
+    co2_storage = None
+    if storage_type == "co2_storage":
+        co2_flow = 2 * co2_flow
         co2_flow[1::2] = 0
-        storage = Storage(costs=1000, max_charging_speed=1.0, storage_loss=0.0, charging_loss=0.0)
+        # there is no curtailment, so we need to invest into storage for non-constant input flow
+        co2_storage = Storage(
+            costs=1000,
+            max_charging_speed=1.0,
+            storage_loss=0.0,
+            charging_loss=0.0,
+        )
+    elif storage_type == "no_storage":
+        # nothing todo here
+        ...
     else:
-        co2_flow = 0.5 * co2_flow
-        storage = None
+        raise ValueError(f"invalid storage_type: {storage_type}")
 
     wind = NodeScalableInputProfile(name="wind", input_flow=wind_flow, costs=1, output_unit="MW")
     hydrogen = Node(
@@ -88,7 +98,7 @@ def test_simple_co2_storage(with_storage):
         output_unit="t",
     )
     co2 = NodeFixInputProfile(
-        name="co2", input_flow=co2_flow, storage=storage, costs=0, output_unit="t"
+        name="co2", input_flow=co2_flow, storage=co2_storage, costs=0, output_unit="t"
     )
 
     methanol_synthesis = Node(
