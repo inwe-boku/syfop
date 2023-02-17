@@ -24,6 +24,9 @@ class NodeBase:
         self.output_proportions = None
 
     def _preprocess_input_commodities(self, inputs, input_commodities):
+        if not all(isinstance(node, NodeBase) for node in inputs):
+            raise ValueError("inputs must be of type NodeBase or some subclass")
+
         if isinstance(input_commodities, str):
             input_commodities = len(inputs) * [input_commodities]
         elif len(inputs) != len(input_commodities):
