@@ -61,41 +61,86 @@ def test_expensive_solar_pv(solver):
     np.testing.assert_array_almost_equal(0.75 * (co2 + electricity), electricity)
 
 
-@pytest.mark.parametrize("storage_type", ["co2_storage", "no_storage"])
+@pytest.mark.parametrize(
+    "storage_type",
+    [
+        "no_storage",
+        "co2_storage",
+        "electricity_storage",
+        "hydrogen_storage",
+    ],
+)
 def test_simple_co2_storage(storage_type):
     """A simple methanol synthesis network with wind only to produce hydrogen.
 
-    The optimum should be identical in both scenarios:
+    The optimum should be (almost) identical in all scenarios:
      - there is a constant 0.5 CO2 input flow (no storage)
-     - CO2 input flow is alternating between 0 and 1 and there is a CO2 storage
+     - CO2 input flow is alternating between 0 and 1 and there is a CO2 storage (co2_storage)
+     - wind capacity factors are alternating between 0 and 1 and there is a battery, note that
+       this won't effect the size of the wind node (electricity_storage)
+     - wind is alternating again between 0 and 1, but instead of storing electricity, we store
+       hydrogen - note that here we need a larger electrolyzer (hydrogen_storage)
+
     """
 
     wind_flow = const_time_series(0.5)
     co2_flow = const_time_series(0.5)
     co2_storage = None
+    electricity_storage = None
+    hydrogen_storage = None
+    expected_size_hydrogen = 1.5
+
+    # note: there is no curtailment, so we need to invest into storage for non-constant input flow
+    # even if it's expensive, so storage price is not relevant.
+
     if storage_type == "co2_storage":
         co2_flow = 2 * co2_flow
         co2_flow[1::2] = 0
-        # there is no curtailment, so we need to invest into storage for non-constant input flow
         co2_storage = Storage(
-            costs=1000,
+            costs=1000,  # price not relevant, see comment above
             max_charging_speed=1.0,
             storage_loss=0.0,
             charging_loss=0.0,
         )
+    elif storage_type == "electricity_storage":
+        electricity_storage = Storage(
+            costs=100,  # price not relevant, see comment above
+            max_charging_speed=1.0,
+            storage_loss=0.0,
+            charging_loss=0.0,
+        )
+        wind_flow = 2 * wind_flow
+        wind_flow[1::2] = 0
+    elif storage_type == "hydrogen_storage":
+        hydrogen_storage = Storage(
+            costs=30,  # price not relevant, see comment above
+            max_charging_speed=1.0,
+            storage_loss=0.0,
+            charging_loss=0.0,
+        )
+        wind_flow = 2 * wind_flow
+        wind_flow[1::2] = 0
+        expected_size_hydrogen = 3.0
     elif storage_type == "no_storage":
-        # nothing todo here
+        # nothing to do here
         ...
     else:
         raise ValueError(f"invalid storage_type: {storage_type}")
 
-    wind = NodeScalableInputProfile(name="wind", input_flow=wind_flow, costs=1, output_unit="MW")
+    wind = NodeScalableInputProfile(
+        name="wind",
+        input_flow=wind_flow,
+        costs=1.3,
+        output_unit="MW",
+        storage=electricity_storage,
+    )
     hydrogen = Node(
         name="hydrogen",
         inputs=[wind],
         input_commodities="electricity",
         costs=3,
         output_unit="t",
+        storage=hydrogen_storage,
     )
     co2 = NodeFixInputProfile(
         name="co2", input_flow=co2_flow, storage=co2_storage, costs=0, output_unit="t"
@@ -105,7 +150,7 @@ def test_simple_co2_storage(storage_type):
         name="methanol_synthesis",
         inputs=[co2, hydrogen],
         input_commodities=["co2", "hydrogen"],
-        costs=1,
+        costs=1.2,
         output_unit="t",
         input_proportions={"co2": 0.25, "hydrogen": 0.75},
     )
@@ -114,9 +159,16 @@ def test_simple_co2_storage(storage_type):
     network.optimize(default_solver)
 
     np.testing.assert_almost_equal(network.model.solution.size_wind, 3.0)
-    np.testing.assert_almost_equal(network.model.solution.size_hydrogen, 1.5)
+
+    np.testing.assert_almost_equal(network.model.solution.size_hydrogen, expected_size_hydrogen)
     np.testing.assert_almost_equal(network.model.solution.size_methanol_synthesis, 2.0)
-    np.testing.assert_array_almost_equal(network.model.solution.flow_wind_hydrogen, 1.5)
+    if storage_type == "hydrogen_storage":
+        np.testing.assert_array_almost_equal(
+            network.model.solution.flow_wind_hydrogen,
+            wind_flow * network.model.solution.size_wind,
+        )
+    else:
+        np.testing.assert_array_almost_equal(network.model.solution.flow_wind_hydrogen, 1.5)
     np.testing.assert_array_almost_equal(network.model.solution.flow_co2_methanol_synthesis, 0.5)
     np.testing.assert_array_almost_equal(
         network.model.solution.flow_hydrogen_methanol_synthesis, 1.5
