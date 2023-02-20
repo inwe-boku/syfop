@@ -132,8 +132,13 @@ class Network:
             if hasattr(node, "storage") and node.storage is not None and node.storage.costs > 0:
                 storage_level = self.model.solution[f"storage_level_{node.name}"]
                 storage_size = self.model.solution[f"size_storage_{node.name}"]
-                assert storage_level.min() == 0.0, f"storage for {node.name} never empty"
-                assert storage_level.max() == storage_size, f"storage for {node.name} never full"
+                # XXX not sure what to use as epsilon here
+                assert (
+                    storage_level.min() < 1e-12
+                ), f"storage for {node.name} never empty (min value: {storage_level.min()}"
+                assert (
+                    storage_level.max() > storage_size - 1e-12
+                ), f"storage for {node.name} never full (max value: {storage_level.max()}"
 
     def optimize(self, solver_name="highs", **kwargs):
         """Optimize all node sizes: minimize total costs (sum of all (scaled) node costs) with
