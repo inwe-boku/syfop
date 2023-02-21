@@ -249,13 +249,20 @@ def test_incosistent_time_coords(wrong_length):
         Network([wind, electricity])
 
 
-def test_hot_chocolate():
+@pytest.mark.parametrize("with_curtailment", [False, True])
+def test_hot_chocolate(with_curtailment):
     """A quite synthetic example, to test whether parameters and units are intuitive. A cow
     produces milk which is mixed cacao powder to produce hot chocolate."""
     time_coords = 3
 
-    # we will need two cows, because one cow produces only half of a cup of milk per timestamp
+    # we will need 2l of cow capacity, because we have a constant capacity factor of 120ml per
+    # liter of cow capacity
     milk_flow = const_time_series(120e-3, time_coords=time_coords)
+
+    if with_curtailment:
+        # let's assume we have too much milk in the first time stamp, there is no storage and we
+        # don't have enough cacao powder, so we need to curtail some milk
+        milk_flow[0] = 1.0
 
     # we will need size = 8 to get 8g per time stamp
     cacao_delivery_flow = const_time_series(1.0, time_coords=time_coords)
@@ -299,9 +306,20 @@ def test_hot_chocolate():
         output_unit="l",
     )
 
-    network = Network(
-        [cow, cacao_delivery, hot_chocolate, hot_chocolate_consumer], time_coords=time_coords
-    )
+    nodes = [cow, cacao_delivery, hot_chocolate, hot_chocolate_consumer]
+
+    if with_curtailment:
+        milk_curtailment = Node(
+            name="milk_curtailment",
+            inputs=[cow],
+            input_commodities="milk",
+            costs=0,
+            output_unit="l",
+        )
+
+        nodes.append(milk_curtailment)
+
+    network = Network(nodes, time_coords=time_coords)
 
     network.optimize(default_solver)
 
@@ -314,3 +332,17 @@ def test_hot_chocolate():
     np.testing.assert_array_almost_equal(
         network.model.solution.flow_hot_chocolate_hot_chocolate_consumer, 240e-3 + 8 * 1.67e-3
     )
+
+    if with_curtailment:
+        np.testing.assert_almost_equal(
+            network.model.solution.flow_milk_curtailment[0], 2.0 - 240e-3
+        )
+        np.testing.assert_array_almost_equal(network.model.solution.flow_milk_curtailment[1:], 0)
+
+    # test keys of output_flows
+    if with_curtailment:
+        assert {"milk_curtailment", "hot_chocolate"} == set(cow.output_flows.keys())
+    else:
+        assert {"hot_chocolate"} == set(cow.output_flows.keys())
+    assert {"hot_chocolate"} == set(cacao_delivery.output_flows.keys())
+    assert {"hot_chocolate_consumer"} == set(hot_chocolate.output_flows.keys())
