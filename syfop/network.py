@@ -98,7 +98,7 @@ class Network:
                     }
                 else:
                     node.output_flows = {
-                        node.name: output.input_flows[node.name] for output in node.outputs
+                        output.name: output.input_flows[node.name] for output in node.outputs
                     }
 
                     # TODO this has quadratic performance and is very ugly, but having dicts
