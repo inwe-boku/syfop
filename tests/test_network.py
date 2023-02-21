@@ -247,3 +247,70 @@ def test_incosistent_time_coords(wrong_length):
 
     with pytest.raises(ValueError, match=error_msg_pattern):
         Network([wind, electricity])
+
+
+def test_hot_chocolate():
+    """A quite synthetic example, to test whether parameters and units are intuitive. A cow
+    produces milk which is mixed cacao powder to produce hot chocolate."""
+    time_coords = 3
+
+    # we will need two cows, because one cow produces only half of a cup of milk per timestamp
+    milk_flow = const_time_series(120e-3, time_coords=time_coords)
+
+    # we will need size = 8 to get 8g per time stamp
+    cacao_delivery_flow = const_time_series(1.0, time_coords=time_coords)
+
+    cow = NodeScalableInputProfile(
+        name="cow",
+        input_flow=milk_flow,
+        # this is a weird workaround, because we know only the milk price, but costs here is
+        # relative to the cow size not to the amount of milk
+        costs=1.49 * milk_flow[0],  # in EUR/l
+        output_unit="l",
+    )
+
+    # 1g of cacao powder is 1.67ml if desolved in milk
+    cacao_delivery = NodeScalableInputProfile(
+        name="cacao_delivery",
+        input_flow=cacao_delivery_flow,
+        # workaround, same as for cow costs
+        costs=3.2e-3 * cacao_delivery_flow[0],  # in EUR/g
+        output_unit="g",
+    )
+
+    hot_chocolate = Node(
+        name="hot_chocolate",
+        inputs=[cow, cacao_delivery],
+        input_commodities=["milk", "cacao"],
+        # 240ml of milk, 8g of cacao
+        input_proportions={"cacao_delivery": 8 / (240e-3 + 8), "cow": 240e-3 / (240e-3 + 8)},
+        convert_factor=(240e-3 + 8 * 1.67e-3) / (240e-3 + 8),
+        costs=0,
+        output_unit="l",
+    )
+
+    # the consumer drinks 1 cup of cocao per time stamp, which is 240ml of milk and 8g of cacao
+    hot_chocolate_consumer = NodeFixOutputProfile(
+        name="hot_chocolate_consumer",
+        inputs=[hot_chocolate],
+        input_commodities="hot_chocolate",
+        output_flow=const_time_series(240e-3 + 8 * 1.67e-3, time_coords=time_coords),
+        costs=0,
+        output_unit="l",
+    )
+
+    network = Network(
+        [cow, cacao_delivery, hot_chocolate, hot_chocolate_consumer], time_coords=time_coords
+    )
+
+    network.optimize(default_solver)
+
+    assert network.model.solution.size_cacao_delivery == 8
+    assert abs(network.model.solution.size_cow - 2.0) < 1e-14
+    np.testing.assert_array_almost_equal(
+        network.model.solution.flow_cacao_delivery_hot_chocolate, 8.0
+    )
+    np.testing.assert_array_almost_equal(network.model.solution.flow_cow_hot_chocolate, 240e-3)
+    np.testing.assert_array_almost_equal(
+        network.model.solution.flow_hot_chocolate_hot_chocolate_consumer, 240e-3 + 8 * 1.67e-3
+    )
