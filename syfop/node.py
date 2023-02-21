@@ -185,10 +185,16 @@ class NodeScalableBase(NodeBase):
         super().create_constraints(model)
 
         # constraint: size of technology
-        # FIXME this is probably wrong for FixedInput?!
-        if self.output_flows is not None and self.size:
+        # TODO this is useless for NodeScalableInputProfile, but as long as input_flow <= 1. it
+        # shouldn't be a problem
+        if self.size is not None:
+            lhs = sum(self.output_flows.values()) - self.size
+
+            if self.storage is not None:
+                lhs = lhs + self.storage.charge
+
             model.add_constraints(
-                sum(self.output_flows.values()) - self.size <= 0,
+                lhs <= 0,
                 name=f"limit_outflow_by_size_{self.name}",
             )
 
