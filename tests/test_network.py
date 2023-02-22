@@ -233,7 +233,7 @@ def test_incosistent_time_coords(wrong_length):
 
     wind = NodeScalableInputProfile(
         name="wind",
-        input_flow=const_time_series(42.0, **time_coords_params),
+        input_flow=const_time_series(0.42, **time_coords_params),
         costs=1,
         output_unit="MW",
     )

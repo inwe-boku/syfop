@@ -223,8 +223,6 @@ class NodeInputProfileBase(NodeBase):
         # validated in class Network, when every node knows it's outputs
         self.output_proportions = output_proportions
 
-        # TODO input_flow should be <1.? (i.e. dimensionless capacity factors)
-        # but note: this is wrong for co2 (costs=0), i.e. only for scalable fixed input
         self.input_flows = {"": input_flow}
 
     def _create_input_flows_variables(self, model, time_coords):
@@ -284,17 +282,43 @@ class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
 
     Use cases: wind or PV time series as capacity factors and size is the installed capacity.
 
+    Note that 0 <= input_flow <= 1 needs to be given otherwise size wouldn't be maximum total
+    output of the node because input_flow is multiplied with the size variable.
+
     """
+
+    def __init__(
+        self,
+        name,
+        input_flow,
+        costs,
+        output_unit,
+        output_proportions=None,
+        storage=None,
+    ):
+        if not ((0 <= input_flow) & (input_flow <= 1)).all():
+            raise ValueError(
+                "invalid values in input_flow: must be capacity factors, i.e. between 0 and 1"
+            )
+
+        super().__init__(
+            name,
+            input_flow,
+            costs,
+            output_unit,
+            output_proportions=output_proportions,
+            storage=storage,
+        )
 
     def create_variables(self, model, time_coords):
         super().create_variables(model, time_coords)
-        # if input_flows is not None, we have a FixedInput, which we need to scale only
-        # if there is a size defined, otherwise it will stay as scalar
         self.input_flows[""] = self.size * self.input_flows[""]
 
 
 class NodeScalableOutputProfile(NodeScalableBase, NodeOutputProfileBase):
     # TODO what would be the usecase of such a node?!
+    # TODO do we need to check if output_flow <= 1? How does scaling work here?
+    # TODO do we need the size limit constraint here?
     # not implemented yet!
     ...
 

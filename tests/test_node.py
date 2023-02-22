@@ -90,3 +90,23 @@ def test_missing_input_proportions_but_different_commodities(three_example_nodes
             costs=0,
             output_unit="MW",
         )
+
+
+def test_input_flow_not_capacity_factor():
+    error_msg = "invalid values in input_flow: must be capacity factors"
+
+    with pytest.raises(ValueError, match=error_msg):
+        _ = NodeScalableInputProfile(
+            name="wind",
+            input_flow=const_time_series(1.5),
+            costs=1,
+            output_unit="MW",
+        )
+
+    with pytest.raises(ValueError, match=error_msg):
+        _ = NodeScalableInputProfile(
+            name="wind",
+            input_flow=const_time_series(-0.5),
+            costs=1,
+            output_unit="MW",
+        )
