@@ -140,6 +140,13 @@ class NodeBase:
         # Note that rhs is only a constant if self is an instance of NodeInputProfileBase with
         # only one input, which is an xr.DataArray.
         if not isinstance(lhs, linopy.Variable) and not isinstance(lhs, linopy.LinearExpression):
+            if self.storage is not None:
+                # lhs means that sum of output flow nodes is not a variable, which means that we
+                # have a self is of type NodeFixOutputProfile. then storage doesn't really make
+                # sense, so we can simply forbid this case.
+                # If we want to support it, we need to take care of a wrong sign when adding charge
+                # and discharge below to lhs.
+                raise RuntimeError("NodeFixOutputProfile with Storage not supported")
             lhs, rhs = rhs, lhs
         if isinstance(rhs, linopy.Variable) or isinstance(rhs, linopy.LinearExpression):
             lhs = lhs - rhs
@@ -251,6 +258,12 @@ class NodeOutputProfileBase(NodeBase):
             self.inputs, input_proportions, self.input_commodities, "input"
         )
         self.input_proportions = input_proportions
+
+        if storage is not None:
+            # what would be the meaning of a storage in an output node?
+            # if we want to support it, check the comment above, see RuntimeError when creating the
+            # in _create_constraint_inout_flow_balance()
+            raise NotImplementedError("storage is not supported for output nodes")
 
 
 class NodeFixInputProfile(NodeInputProfileBase):
