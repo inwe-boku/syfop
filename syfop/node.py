@@ -188,23 +188,6 @@ class NodeScalableBase(NodeBase):
         if self.costs:  # None or 0 means that we don't need a size variable
             self.size = model.add_variables(name=f"size_{self.name}", lower=0)
 
-    def create_constraints(self, model):
-        super().create_constraints(model)
-
-        # constraint: size of technology
-        # TODO this is useless for NodeScalableInputProfile, but as long as input_flow <= 1. it
-        # shouldn't be a problem
-        if self.size is not None:
-            lhs = sum(self.output_flows.values()) - self.size
-
-            if self.storage is not None:
-                lhs = lhs + self.storage.charge
-
-            model.add_constraints(
-                lhs <= 0,
-                name=f"limit_outflow_by_size_{self.name}",
-            )
-
 
 class NodeInputProfileBase(NodeBase):
     def __init__(
@@ -361,6 +344,21 @@ class Node(NodeScalableBase):
         )
         self.input_proportions = input_proportions
         self.output_proportions = output_proportions
+
+    def create_constraints(self, model):
+        super().create_constraints(model)
+
+        # constraint: size of technology
+        if self.size is not None:
+            lhs = sum(self.output_flows.values()) - self.size
+
+            if self.storage is not None:
+                lhs = lhs + self.storage.charge
+
+            model.add_constraints(
+                lhs <= 0,
+                name=f"limit_outflow_by_size_{self.name}",
+            )
 
 
 class Storage:

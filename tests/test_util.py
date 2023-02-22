@@ -43,35 +43,17 @@ inout_flow_balance_wind2:
 =
 0.000000
 
-limit_outflow_by_size_wind3:
-+1.000000 * flow_wind_demand1
--1.000000 * size_wind0
-<=
-0.000000
-
-limit_outflow_by_size_wind4:
-+1.000000 * flow_wind_demand2
--1.000000 * size_wind0
-<=
-0.000000
-
-limit_outflow_by_size_wind5:
-+1.000000 * flow_wind_demand3
--1.000000 * size_wind0
-<=
-0.000000
-
-inout_flow_balance_demand6:
+inout_flow_balance_demand3:
 +1.000000 * flow_wind_demand1
 =
 5.000000
 
-inout_flow_balance_demand7:
+inout_flow_balance_demand4:
 +1.000000 * flow_wind_demand2
 =
 5.000000
 
-inout_flow_balance_demand8:
+inout_flow_balance_demand5:
 +1.000000 * flow_wind_demand3
 =
 5.000000
