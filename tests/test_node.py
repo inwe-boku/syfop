@@ -110,3 +110,15 @@ def test_input_flow_not_capacity_factor():
             costs=1,
             output_unit="MW",
         )
+
+
+def test_wrong_node_input():
+    error_msg = "inputs must be of type NodeBase or some subclass"
+    with pytest.raises(ValueError, match=error_msg):
+        _ = Node(
+            name="electricity",
+            inputs=["solar_pv", "wind"],
+            input_commodities="electricity",
+            costs=0,
+            output_unit="MW",
+        )

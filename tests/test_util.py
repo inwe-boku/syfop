@@ -3,11 +3,11 @@ import pytest
 from syfop.util import constraints_to_str, print_constraints, random_time_series
 
 
-def test_random_time_series():
-    time_series = random_time_series(42)
+@pytest.mark.parametrize("time_coords", [42, range(42)])
+def test_random_time_series(time_coords):
+    time_series = random_time_series(time_coords)
     assert time_series.sizes["time"] == 42
     assert ((0 <= time_series) & (time_series < 1)).all()
-    time_series
 
 
 @pytest.fixture(scope="session")
