@@ -3,7 +3,7 @@ import time
 import linopy
 import networkx as nx
 import pandas as pd
-from networkx.drawing.nx_pydot import graphviz_layout
+from networkx.drawing.nx_agraph import graphviz_layout
 
 from syfop.node import NodeInputProfileBase, NodeOutputProfileBase
 from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
