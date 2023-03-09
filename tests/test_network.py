@@ -346,3 +346,16 @@ def test_hot_chocolate(with_curtailment):
         assert {"hot_chocolate"} == set(cow.output_flows.keys())
     assert {"hot_chocolate"} == set(cacao_delivery.output_flows.keys())
     assert {"hot_chocolate_consumer"} == set(hot_chocolate.output_flows.keys())
+
+
+@pytest.mark.parametrize("mode", ["netgraph", "graphviz"])
+def test_draw_network(mode):
+    # does not really test output, only increases coverage and check if any error is raised
+    network = simple_demand_network()
+    network.draw(mode=mode)
+
+
+def test_draw_network_invalid_mode():
+    network = simple_demand_network()
+    with pytest.raises(ValueError, match="invalid draw mode: INVALID"):
+        network.draw(mode="INVALID_MODE")

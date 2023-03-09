@@ -178,12 +178,49 @@ class Network:
         else:
             return technology_costs + storage_costs
 
-    def draw(self):
-        """Draw a graphic representation of the network of all nodes and edges."""
-        nx.draw(
-            self.graph,
-            pos=graphviz_layout(self.graph, prog="dot"),  # , args='concentrate=false'),
-            node_color=[node_attrs["color"] for _, node_attrs in self.graph.nodes(data=True)],
-            # node_size=5000,
-            with_labels=True,
-        )
+    def draw(self, mode="netgraph"):
+        """Draw a graphic representation of the network of all nodes and edges.
+
+        Parameters
+        ----------
+        mode : str
+            choice of plotting library used to draw the graph, one of: netgraph, graphviz
+
+
+        """
+        # this requires python >=3.7, otherwise order of values() is not guaranteed
+        node_color = {
+            node: node_attrs["color"] for node, node_attrs in self.graph.nodes(data=True)
+        }
+
+        if mode == "graphviz":
+            nx.draw(
+                self.graph,
+                pos=graphviz_layout(self.graph, prog="dot"),
+                node_color=node_color.values(),
+                # node_size=5000,
+                with_labels=True,
+            )
+        elif mode == "netgraph":
+            # netgraph is used only here, let's keep it an optional dependency
+            import netgraph
+
+            # TODO we could do some fancy stuff here to make plotting nicer:
+            #   shape = input_proportions
+            #   color = output node
+            #   scalable or fixed size?
+            #   display results?
+            #   display commodities / units?
+            # TODO allow custom args to be passed to netgraph?
+            netgraph.Graph(
+                self.graph,
+                node_labels=True,
+                node_layout="dot",
+                node_label_offset=0.09,
+                node_color=node_color,
+                arrows=True,
+                edge_width=1.5,
+                node_edge_width=0.0,
+            )
+        else:
+            raise ValueError(f"invalid draw mode: {mode} (valid modes: netgraph, graphviz)")
