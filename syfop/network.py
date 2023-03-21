@@ -52,17 +52,17 @@ class Network:
         graph = nx.DiGraph()
         for node in nodes:
             if isinstance(node, NodeInputProfileBase):
-                color = "red"
+                color = "#c72321"
             elif isinstance(node, NodeOutputProfileBase):
-                color = "black"
+                color = "#f0c220"
             else:
-                color = "blue"
+                color = "#000000"
 
             graph.add_node(node.name, color=color)
 
             if hasattr(node, "storage") and node.storage is not None:
                 # XXX hopefully this name is unique
-                graph.add_node(f"{node.name}_storage", color="green")
+                graph.add_node(f"{node.name}_storage", color="#0d8085")
                 graph.add_edge(f"{node.name}_storage", node.name)
                 graph.add_edge(node.name, f"{node.name}_storage")
 
@@ -219,7 +219,7 @@ class Network:
                 node_label_offset=0.09,
                 node_color=node_color,
                 arrows=True,
-                edge_width=1.5,
+                edge_width=1.2,
                 node_edge_width=0.0,
             )
         else:
