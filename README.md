@@ -38,15 +38,6 @@ https://raw.githubusercontent.com/PyPSA/PyPSA/master/README.md
 -->
 
 
-Example(s)
-----------
-
-see [demo.ipynb](notebooks/demo.ipynb)
-
-
-Short introduction
-------------------
-
 `syfop` allows the user to model a network, where commodities run through nodes representing
 certain types of technologies. In a second step, sizes of the nodes are optimized to be cost
 optimal with respect to constraints introduced by the network. The optimization uses discrete time
@@ -67,6 +58,12 @@ certain commodity between two nodes. The commodity is then either entirely used 
 which means that it does not have any other outgoing edges to other nodes, or it is converted to
 other commodities and transmitted to other nodes. This means that the sum of all inputs needs to
 equal all outputs in every time step. The conversion is defined linearly using a conversion factor.
+
+
+Example(s)
+----------
+
+see [demo.ipynb](notebooks/demo.ipynb)
 
 
 How to install
@@ -95,6 +92,7 @@ export GRB_LICENSE_FILE="/opt/gurobi810/gurobi.lic"
 
 How to use
 ----------
+
 
 ```python
 node1 = NodeScalableInputProfile(
