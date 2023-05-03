@@ -74,14 +74,28 @@ class Network:
                 graph.add_edge(input_.name, node.name)
         return graph
 
+    def _add_leaf_flow_variables(self, model, nodes):
+        # Add a variable for nodes, which do not have input flows or output flows. This variable
+        # should be simply the sum of output flows (for the input flow variable) or sum of input
+        # flows (for the output flow variable).
+        # This is not really needed but nice to have to see the values in the solution and
+        # output_flow comes in handy in to be in the size constraints.
+        for node in nodes:
+            if len(node.input_flows) == 0:
+                node.input_flows[node.name] = timeseries_variable(
+                    model, self.time_coords, f"input_flow_{node.name}"
+                )
+            if len(node.output_flows) == 0:
+                node.output_flows[node.name] = timeseries_variable(
+                    model, self.time_coords, f"output_flow_{node.name}"
+                )
+
     def _generate_optimization_model(self, nodes):
         model = linopy.Model()
 
         for node in nodes:
             node.create_variables(model, self.time_coords)
 
-        # XXX not sure if we really need this backward connection, also it won't work as soon as
-        # we add demand
         for node in nodes:
             node.outputs = []
         for node in nodes:
@@ -92,34 +106,35 @@ class Network:
         # it to the Node objects here, except for nodes which are NodeOutputProfileBase
         for node in nodes:
             if node.output_flows is None:
-                if not node.outputs:
-                    # this is a variable for leaves, i.e. final output, not really needed, but
-                    # nice to have and used in size constraints
-                    node.output_flows = {
-                        node.name: timeseries_variable(
-                            model, self.time_coords, f"flow_{node.name}"
-                        )
-                    }
-                else:
-                    node.output_flows = {
-                        output.name: output.input_flows[node.name] for output in node.outputs
-                    }
+                node.output_flows = {
+                    output.name: output.input_flows[node.name] for output in node.outputs
+                }
 
-                    # TODO this has quadratic performance and is very ugly, but having dicts
-                    # everywhere also not nice, maybe switch to some adjacency matrix thingy, where
-                    # one can select all input edges or output edges by choosing a column or a row?
-                    node.output_commodities = [
-                        output.input_commodities[output.inputs.index(node)]
-                        for output in node.outputs
-                        if output.input_commodities is not None  # FIXME this line is stupid
-                    ]
+                # TODO this has quadratic performance and is very ugly, but having dicts
+                # everywhere also not nice, maybe switch to some adjacency matrix thingy, where
+                # one can select all input edges or output edges by choosing a column or a row?
+                node.output_commodities = [
+                    output.input_commodities[output.inputs.index(node)]
+                    for output in node.outputs
+                    if output.input_commodities is not None  # FIXME this line is stupid
+                ]
 
-                    # check whether output_proportions are valid and not missing if required
-                    # note that the first part could be checked already in the constructor of the
-                    # node classes which take output_proportions as parameter
-                    node._check_proportions_valid_or_missing(
-                        node.outputs, node.output_proportions, node.output_commodities, "output"
-                    )
+                # check whether output_proportions are valid and not missing if required
+                # note that the first part could be checked already in the constructor of the
+                # node classes which take output_proportions as parameter
+                node._check_proportions_valid_or_missing(
+                    node.outputs, node.output_proportions, node.output_commodities, "output"
+                )
+
+                if (
+                    len(set(node.output_commodities)) > 1
+                    and hasattr(node, "storage")
+                    and node.storage is not None
+                ):
+                    # we have one storage per node, so it is not clear what should be stored
+                    raise ValueError("storage not supported for multiple output commodities (yet)")
+
+        self._add_leaf_flow_variables(model, nodes)
 
         for node in nodes:
             node.create_constraints(model)

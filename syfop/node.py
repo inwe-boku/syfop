@@ -129,7 +129,15 @@ class NodeBase:
 
     def _create_constraint_inout_flow_balance(self, model):
         """Add constraint: sum of inputs == sum of outputs for this node for each time step."""
-        # sum of output flows (left-hand-side of equation) and inputs must be equal:
+
+        # No input/output flows should never happen because we create extra variables for such
+        # nodes in Network(). Hence, this is just a paranoia check to avoid an empty sum to
+        # evaluate to 0 which would cause an infeasible network. (We define "no input nodes" as
+        # arbitrary input, i.e. to match the sum of outputs and not zero input. Same for no
+        # output nodes.)
+        assert len(list(self.input_flows.values())) > 0, "node {self.name} has no input flows"
+        assert len(list(self.output_flows.values())) > 0, "node {self.name} has no output flows"
+
         lhs = sum(self.output_flows.values())
         rhs = self.convert_factor * sum(self.input_flows.values())
 

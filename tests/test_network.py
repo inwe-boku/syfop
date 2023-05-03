@@ -173,7 +173,9 @@ def test_simple_co2_storage(storage_type):
     np.testing.assert_array_almost_equal(
         network.model.solution.flow_hydrogen_methanol_synthesis, 1.5
     )
-    np.testing.assert_array_almost_equal(network.model.solution.flow_methanol_synthesis, 2.0)
+    np.testing.assert_array_almost_equal(
+        network.model.solution.output_flow_methanol_synthesis, 2.0
+    )
 
 
 def test_missing_node():
@@ -190,6 +192,55 @@ def test_missing_node():
 
     with pytest.raises(ValueError, match="missing in list of nodes.* wind"):
         Network([electricity])
+
+
+def test_no_input_node():
+    time_coords = 10
+    # this is not a realistic example, because we don't support variable costs yet
+    # a better example without variable co
+    gas = Node(
+        name="gas",
+        inputs=[],
+        input_commodities="gas",
+        costs=1,
+        output_unit="MW",
+    )
+    demand = NodeFixOutputProfile(
+        name="demand",
+        inputs=[gas],
+        input_commodities="electricity",
+        output_flow=const_time_series(5.0, time_coords=time_coords),
+        costs=0,
+        output_unit="MW",
+    )
+    network = Network([gas, demand], time_coords=time_coords)
+    network.optimize(default_solver)
+
+    np.testing.assert_array_almost_equal(network.model.solution.input_flow_gas, 5.0)
+    np.testing.assert_array_almost_equal(network.model.solution.flow_gas_demand, 5.0)
+    assert network.model.solution.size_gas == 5.0
+
+
+def test_no_output_node():
+    time_coords = 10
+    wind = NodeFixInputProfile(
+        name="wind",
+        input_flow=const_time_series(5, time_coords=time_coords),
+        costs=0,  # FIXME NodeFixInputProfile is not usable if we don't set the size to 0
+        output_unit="t",
+    )
+    hydrogen = Node(
+        name="hydrogen",
+        inputs=[wind],
+        input_commodities="electricity",
+        costs=3,
+        output_unit="t",
+    )
+    network = Network([wind, hydrogen], time_coords=time_coords)
+    network.optimize(default_solver)
+    np.testing.assert_array_almost_equal(network.model.solution.output_flow_hydrogen, 5.0)
+    np.testing.assert_array_almost_equal(network.model.solution.flow_wind_hydrogen, 5.0)
+    assert network.model.solution.size_hydrogen == 5.0
 
 
 def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.5):
@@ -335,9 +386,11 @@ def test_hot_chocolate(with_curtailment):
 
     if with_curtailment:
         np.testing.assert_almost_equal(
-            network.model.solution.flow_milk_curtailment[0], 2.0 - 240e-3
+            network.model.solution.output_flow_milk_curtailment[0], 2.0 - 240e-3
         )
-        np.testing.assert_array_almost_equal(network.model.solution.flow_milk_curtailment[1:], 0)
+        np.testing.assert_array_almost_equal(
+            network.model.solution.output_flow_milk_curtailment[1:], 0
+        )
 
     # test keys of output_flows
     if with_curtailment:
