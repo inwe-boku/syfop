@@ -9,6 +9,10 @@ from syfop.node import NodeInputProfileBase, NodeOutputProfileBase
 from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
+class SolverError(Exception):
+    ...
+
+
 class Network:
     def __init__(self, nodes, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_year=2020):
         all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
@@ -157,6 +161,12 @@ class Network:
 
         io_api = "direct" if solver_name in ("gurobi", "highs") else "lp"
         self.model.solve(solver_name=solver_name, keep_files=True, io_api=io_api, **kwargs)
+
+        if linopy.constants.SolverStatus[self.model.status] != linopy.constants.SolverStatus.ok:
+            raise SolverError(
+                f"unable to solve optimization, solver status={self.model.status}, "
+                f"termination condition={self.model.termination_condition}"
+            )
 
         self._check_storage_level_zero()
 

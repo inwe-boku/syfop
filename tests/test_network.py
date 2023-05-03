@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from syfop.network import Network
+from syfop.network import Network, SolverError
 from syfop.node import (
     Node,
     NodeFixInputProfile,
@@ -192,10 +192,10 @@ def test_missing_node():
         Network([electricity])
 
 
-def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS):
+def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.5):
     wind = NodeScalableInputProfile(
         name="wind",
-        input_flow=const_time_series(0.5, time_coords=time_coords),
+        input_flow=const_time_series(wind_input_flow, time_coords=time_coords),
         costs=1,
         output_unit="MW",
     )
@@ -359,3 +359,12 @@ def test_draw_network_invalid_mode():
     network = simple_demand_network()
     with pytest.raises(ValueError, match="invalid draw mode: INVALID"):
         network.draw(mode="INVALID_MODE")
+
+
+def test_infeasible_network():
+    network = simple_demand_network(wind_input_flow=0.0)
+    error_msg = (
+        "unable to solve optimization, solver status=warning, termination condition=infeasible"
+    )
+    with pytest.raises(SolverError, match=error_msg):
+        network.optimize(default_solver)
