@@ -272,19 +272,21 @@ def test_model_simple_demand():
 
 
 @pytest.mark.parametrize("wrong_length", [False, True])
-def test_incosistent_time_coords(wrong_length):
+@pytest.mark.parametrize("input_output", ["input", "output"])
+def test_inconsistent_time_coords(input_output, wrong_length):
     """If a node is used as input but not passed to the Network constructor, this is an error.
     This might change in future."""
+    time_coords_params = {"input": {}, "output": {}}
     if wrong_length:
-        time_coords_params = {"time_coords": 42}
-        error_msg_pattern = "has an input flow with length"
+        time_coords_params[input_output] = {"time_coords": 42}
+        error_msg_pattern = f"has an {input_output} flow with length"
     else:
-        time_coords_params = {"time_coords_year": 2019}
-        error_msg_pattern = "wind has an input flow with time_coords different from the Network"
+        time_coords_params[input_output] = {"time_coords_year": 2019}
+        error_msg_pattern = f" has an {input_output} flow with time_coords different from the"
 
     wind = NodeScalableInputProfile(
         name="wind",
-        input_flow=const_time_series(0.42, **time_coords_params),
+        input_flow=const_time_series(0.42, **time_coords_params["input"]),
         costs=1,
         output_unit="MW",
     )
@@ -295,9 +297,17 @@ def test_incosistent_time_coords(wrong_length):
         costs=0,
         output_unit="MW",
     )
+    demand = NodeFixOutputProfile(
+        name="demand",
+        inputs=[electricity],
+        output_flow=const_time_series(0.42, **time_coords_params["output"]),
+        input_commodities="electricity",
+        costs=0,
+        output_unit="MW",
+    )
 
     with pytest.raises(ValueError, match=error_msg_pattern):
-        Network([wind, electricity])
+        Network([wind, electricity, demand])
 
 
 @pytest.mark.parametrize("with_curtailment", [False, True])

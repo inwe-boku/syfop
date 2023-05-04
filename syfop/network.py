@@ -35,22 +35,31 @@ class Network:
         self.model = self._generate_optimization_model(nodes)
 
     def _check_consistent_time_coords(self, nodes, time_coords):
-        for node in nodes:
-            if not hasattr(node, "input_flows") or node.input_flows is None:
-                continue
-            for input_flow in node.input_flows.values():
-                #
-                if len(input_flow.time) != len(time_coords):
-                    raise ValueError(
-                        f"inconsistent time_coords: node {node.name} has an input flow with "
-                        f"length {len(input_flow.time)}, but the network has time_coords with "
-                        f"length {len(time_coords)}"
-                    )
-                if (input_flow.time != time_coords).any():
-                    raise ValueError(
-                        f"inconsistent time_coords: node {node.name} has an input flow with "
-                        "time_coords different from the Network's time_coords"
-                    )
+        # all time series need to be defined on the same coordinates otherwise vector comparison
+        # will lead to empty constraints
+        for input_output in ("input", "output"):
+            for node in nodes:
+
+                if (
+                    not hasattr(node, f"{input_output}_flows")
+                    or getattr(node, f"{input_output}_flows") is None
+                ):
+                    # don't need to check flows created later than this check, because these are
+                    # filled with flows using self.time_coords
+                    continue
+
+                for flow in getattr(node, f"{input_output}_flows").values():
+                    if len(flow.time) != len(time_coords):
+                        raise ValueError(
+                            f"inconsistent time_coords: node {node.name} has an {input_output} "
+                            f"flow with length {len(flow.time)}, but the network has time_coords "
+                            f"with length {len(time_coords)}"
+                        )
+                    if (flow.time != time_coords).any():
+                        raise ValueError(
+                            f"inconsistent time_coords: node {node.name} has an {input_output} "
+                            "flow with time_coords different from the Network's time_coords"
+                        )
 
     def _create_graph(self, nodes):
         graph = nx.DiGraph()
