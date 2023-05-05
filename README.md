@@ -83,10 +83,19 @@ The conda environment contains the solver HiGHs. Other [solvers](https://linopy.
 <!--
 To install Gurobiy:
 
+Download from:
 https://www.gurobi.com/downloads/gurobi-software/
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/gurobi1000/linux64/lib
-export GRB_LICENSE_FILE="/opt/gurobi810/gurobi.lic"
+
+    tar tar -zxf gurobi10.0.1_linux64.tar.gz
+    cd bla
+    python setup.py install
+
+    /opt/gurobi1001/linux64/bin/grbgetkey XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/gurobi1000/linux64/lib
+    export GRB_LICENSE_FILE="/opt/gurobi810/gurobi.lic"
+
 -->
 
 
