@@ -195,7 +195,7 @@ class Network:
 
         self._check_storage_level_zero()
 
-        logging.info("Solving time: ", time.time() - t0)
+        logging.info("Solving time: %s", time.time() - t0)
 
     def total_costs(self):
         technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
