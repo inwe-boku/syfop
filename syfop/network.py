@@ -1,6 +1,7 @@
 import time
 
 import linopy
+import logging
 import networkx as nx
 import pandas as pd
 from networkx.drawing.nx_agraph import graphviz_layout
@@ -194,7 +195,7 @@ class Network:
 
         self._check_storage_level_zero()
 
-        print("Solving time: ", time.time() - t0)
+        logging.info("Solving time: ", time.time() - t0)
 
     def total_costs(self):
         technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
