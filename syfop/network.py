@@ -185,7 +185,7 @@ class Network:
         t0 = time.time()
 
         io_api = "direct" if solver_name in ("gurobi", "highs") else "lp"
-        self.model.solve(solver_name=solver_name, keep_files=True, io_api=io_api, **kwargs)
+        self.model.solve(solver_name=solver_name, io_api=io_api, **kwargs)
 
         if linopy.constants.SolverStatus[self.model.status] != linopy.constants.SolverStatus.ok:
             raise SolverError(
