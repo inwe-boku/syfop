@@ -15,7 +15,13 @@ class SolverError(Exception):
 
 
 class Network:
-    def __init__(self, nodes, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_year=2020):
+    def __init__(
+        self,
+        nodes,
+        time_coords=DEFAULT_NUM_TIME_STEPS,
+        time_coords_year=2020,
+        solver_dir=None,
+    ):
         all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
         if not (all_input_nodes <= set(nodes)):
             raise ValueError(
@@ -33,7 +39,7 @@ class Network:
         self.nodes = nodes
         self.nodes_dict = {node.name: node for node in nodes}
         self.graph = self._create_graph(nodes)
-        self.model = self._generate_optimization_model(nodes)
+        self.model = self._generate_optimization_model(nodes, solver_dir)
 
     def _check_consistent_time_coords(self, nodes, time_coords):
         # all time series need to be defined on the same coordinates otherwise vector comparison
@@ -100,8 +106,8 @@ class Network:
                     model, self.time_coords, f"output_flow_{node.name}"
                 )
 
-    def _generate_optimization_model(self, nodes):
-        model = linopy.Model()
+    def _generate_optimization_model(self, nodes, solver_dir):
+        model = linopy.Model(solver_dir=solver_dir)
 
         for node in nodes:
             node.create_variables(model, self.time_coords)
