@@ -11,7 +11,7 @@ from syfop.node import (
 )
 from syfop.util import DEFAULT_NUM_TIME_STEPS, const_time_series
 
-all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs"])
+all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs", "cplex"])
 default_solver = "highs"
 
 
