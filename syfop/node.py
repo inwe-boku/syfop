@@ -332,6 +332,7 @@ class Node(NodeScalableBase):
         input_proportions=None,
         output_proportions=None,
         storage=None,
+        input_flow_costs=0.0,
     ):
         super().__init__(name, storage, costs, output_unit, convert_factor)
 
@@ -352,6 +353,8 @@ class Node(NodeScalableBase):
         )
         self.input_proportions = input_proportions
         self.output_proportions = output_proportions
+
+        self.input_flow_costs = input_flow_costs
 
     def create_constraints(self, model):
         super().create_constraints(model)

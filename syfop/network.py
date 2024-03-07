@@ -211,13 +211,22 @@ class Network:
             if hasattr(node, "storage") and node.storage is not None
         )
 
-        if isinstance(storage_costs, int):
+        costs = technology_costs
+
+        for node in self.nodes:
+            if not hasattr(node, "input_flow_costs") or node.input_flow_costs == 0.0:
+                continue
+            input_flows = list(node.input_flows.values())
+            assert len(input_flows) == 1, "only one input flow is supported for now"
+            costs = costs + node.input_flow_costs * input_flows[0].sum()
+
+        if not isinstance(storage_costs, int):
             # if there is no technology, storage costs is simply an int and this is not
             # combinable with a linopy expression uargh... :-/
             # https://github.com/PyPSA/linopy/issues/60
-            return technology_costs
-        else:
-            return technology_costs + storage_costs
+            costs = costs + storage_costs
+
+        return costs
 
     def draw(self, mode="netgraph"):
         """Draw a graphic representation of the network of all nodes and edges.

@@ -194,16 +194,20 @@ def test_missing_node():
         Network([electricity])
 
 
-def test_no_input_node():
+@pytest.mark.parametrize("input_flow_costs", [True, False])
+def test_no_input_node(input_flow_costs):
+    extra_kwrgs = {}
+    expected_input_flow_costs = 0
+
+    if input_flow_costs:
+        extra_kwrgs["input_flow_costs"] = 42  # EUR/MWh
+
+        # 42 EUR/MWh * 10h * 5 MWh/h
+        expected_input_flow_costs = 42 * 10 * 5
+
     time_coords = 10
-    # this is not a realistic example, because we don't support variable costs yet
-    # a better example without variable co
     gas = Node(
-        name="gas",
-        inputs=[],
-        input_commodities="gas",
-        costs=1,
-        output_unit="MW",
+        name="gas", inputs=[], input_commodities="gas", costs=1, output_unit="MW", **extra_kwrgs
     )
     demand = NodeFixOutputProfile(
         name="demand",
@@ -219,6 +223,8 @@ def test_no_input_node():
     np.testing.assert_array_almost_equal(network.model.solution.input_flow_gas, 5.0)
     np.testing.assert_array_almost_equal(network.model.solution.flow_gas_demand, 5.0)
     assert network.model.solution.size_gas == 5.0
+
+    assert network.model.objective_value == 5.0 + expected_input_flow_costs
 
 
 def test_no_output_node():
