@@ -11,10 +11,38 @@ from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
 class SolverError(Exception):
+    """Raised when the solver fails to find an optimal solution."""
+
     ...
 
 
 class Network:
+    """A network is a directed acyclic graph of nodes, which represents the flow of commodities
+    between nodes. Nodes are represented by objects of classes defined in ``syfop.node``. The
+    connections between nodes are defined by the parameter ``inputs`` when creating node objects.
+
+    The network is used to optimize the sizes of the nodes, such that the total costs are
+    minimized.
+
+    Attributes of this class are not supposed to be modified outside of this class - use the
+    methods instead.
+
+    Attributes
+    ----------
+    nodes : list of subclasses of syfop.node.NodeBase
+        List of nodes to be included in the network. All nodes used as input nodes need to be
+        included in this list.
+    time_coords : pandas.DatetimeIndex
+        time coordinates for the optimization problem
+    nodes_dict : dict
+        dictionary of nodes with node names as keys
+    graph : networkx.DiGraph
+        used for drawing the network
+    model : linopy.Model
+        optimization model for the network
+
+    """
+
     def __init__(
         self,
         nodes,
@@ -22,6 +50,21 @@ class Network:
         time_coords_year=2020,
         solver_dir=None,
     ):
+        """Create a network of nodes.
+
+        Parameters
+        ----------
+        nodes : list of subclasses of syfop.node.NodeBase
+            List of nodes to be included in the network. All nodes used as input nodes need to be
+            included in this list otherwise a ValueError is raised.
+        time_coords : int or pandas.DatetimeIndex
+            time coordinates used for all time series in the network, typically hourly time steps
+            for a year
+        time_coords_year : int
+            used only if time_coords is an int
+        solver_dir : str
+
+        """
         all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
         if not (all_input_nodes <= set(nodes)):
             raise ValueError(
@@ -29,7 +72,7 @@ class Network:
                 f"Network(): {', '.join(node.name for node in (all_input_nodes - set(nodes)))}"
             )
 
-        # XXX minor code duplication with util.const_time_series()
+        # minor code duplication with util.const_time_series(), but should not matter too much
         if isinstance(time_coords, int):
             time_coords = pd.date_range(time_coords_year, freq="h", periods=time_coords)
         self.time_coords = time_coords
@@ -39,6 +82,7 @@ class Network:
         self.nodes = nodes
         self.nodes_dict = {node.name: node for node in nodes}
         self.graph = self._create_graph(nodes)
+
         self.model = self._generate_optimization_model(nodes, solver_dir)
 
     def _check_consistent_time_coords(self, nodes, time_coords):
@@ -46,7 +90,6 @@ class Network:
         # will lead to empty constraints
         for input_output in ("input", "output"):
             for node in nodes:
-
                 if (
                     not hasattr(node, f"{input_output}_flows")
                     or getattr(node, f"{input_output}_flows") is None
@@ -162,7 +205,9 @@ class Network:
     def _check_storage_level_zero(self):
         """This is a basic plausibility check. A storage which is never full or never empty
         could be replaced by a smaller storage, which would be advantageous if costs are
-        positive. So something is fishy if this check fails."""
+        positive. So something is fishy if this check fails.
+
+        """
         for node in self.nodes:
             if hasattr(node, "storage") and node.storage is not None and node.storage.costs > 0:
                 storage_level = self.model.solution[f"storage_level_{node.name}"]
@@ -182,8 +227,10 @@ class Network:
         Parameters
         ----------
         solver_name : str, optional
-            all solvers supported by
-            [linopy](https://linopy.readthedocs.io/en/latest/solvers.html), by default "highs"
+            all solvers supported by `linopy
+            <https://linopy.readthedocs.io/en/latest/solvers.html>`__, by default "highs"
+        **kwargs
+            additional parameters passed to the solver via ``linopy.Model.solve()``.
 
         """
         # TODO infeasible should raise?
@@ -204,6 +251,16 @@ class Network:
         logging.info("Solving time: %s", time.time() - t0)
 
     def total_costs(self):
+        """Return the total costs of the network as a linopy expression: this is the sum of all
+        node costs (size of the node times the cost per unit) and input flow costs (sum of all
+        input flows of the complete time span times the cost per unit).
+
+        This is used as objective in the optimization problem.
+
+        The result of the solved optimization can be found in the attribute
+        ``Network.model.objective_value``.
+
+        """
         technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
         storage_costs = sum(
             node.storage.size * node.storage.costs
@@ -235,7 +292,6 @@ class Network:
         ----------
         mode : str
             choice of plotting library used to draw the graph, one of: netgraph, graphviz
-
 
         """
         # this requires python >=3.7, otherwise order of values() is not guaranteed
