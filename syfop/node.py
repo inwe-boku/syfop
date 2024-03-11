@@ -147,6 +147,15 @@ class NodeBase:
         #   https://github.com/PyPSA/linopy/issues/60
         # Note that rhs is only a constant if self is an instance of NodeInputProfileBase with
         # only one input, which is an xr.DataArray.
+        #
+        # Update 2024-03-11: with linopy 0.3.8 this should be obsolete, but it works only by adding
+        # the constraint as rhs == lhs, but lhs == rhs fails:
+        #    FAILED tests/test_network.py::test_no_input_node[True] - ValueError: dimensions
+        #    ('time',) must have the same length as the number of data dimensions, ndim=0
+        #
+        # Is issue #60 properly implemented? Is it possible to do the overloading of the equality
+        # operator properly in linopy if lhs is an xarray object in lhs == rhs?
+        #
         if not isinstance(lhs, linopy.Variable) and not isinstance(lhs, linopy.LinearExpression):
             if self.storage is not None:
                 # lhs means that sum of output flow nodes is not a variable, which means that we
