@@ -196,6 +196,9 @@ class NodeBase:
 
 
 class NodeScalableBase(NodeBase):
+    """A Base class for all node types, which have a size variable. Do not initialize directly, use
+    sub classes."""
+
     def create_variables(self, model, time_coords):
         super().create_variables(model, time_coords)
 
@@ -207,6 +210,11 @@ class NodeScalableBase(NodeBase):
 
 
 class NodeInputProfileBase(NodeBase):
+    """A Base class for all node types with a given input time series (profile or fixed
+    input_flow).
+
+    Do not initialize directly, use sub classes."""
+
     def __init__(
         self,
         name,
@@ -216,6 +224,25 @@ class NodeInputProfileBase(NodeBase):
         output_proportions=None,
         storage=None,
     ):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of the node, must be unique in the network
+        input_flow : xr.DataArray
+            Time series of the input flow.
+        costs : float
+            Node costs per size.
+        output_unit : str
+            Unit of the output commodity.
+        output_proportions : dict
+            Proportions of the output flows. The keys are the names of the output flows and the
+            values are the proportions. The proportions must sum up to 1. If not given, all output
+            commodities must be equal.
+        storage : Storage
+            Storage attached to the node.
+
+        """
         super().__init__(name, storage, costs, output_unit)
 
         self.inputs = []
@@ -231,6 +258,11 @@ class NodeInputProfileBase(NodeBase):
 
 
 class NodeOutputProfileBase(NodeBase):
+    """A Base class for all node types with a given output time series (profile or fixed
+    output_flow).
+
+    Do not initialize directly, use sub classes."""
+
     def __init__(
         self,
         name,
@@ -242,6 +274,31 @@ class NodeOutputProfileBase(NodeBase):
         input_proportions=None,
         storage=None,
     ):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of the node, must be unique in the network
+        inputs : list of subclasses of syfob.nodes.NodeBase
+            node objects that are inputs to this node, i.e. from each input node there is a
+            connection to this node
+        input_commodities : list of str
+            List of input commodities. If all inputs have the same commodity, a single string can
+            be given.
+        output_flow : xr.DataArray
+            Time series of the output flow.
+        costs : float
+            Costs per size.
+        output_unit : str
+            Unit of the output commodity.
+        input_proportions : dict
+            Proportions of the input flows. The keys are the names of the input flows and the
+            values are the proportions. The proportions must sum up to 1. If not given, all input
+            commodities must be equal.
+        storage : Storage
+            Storage attached to the node
+
+        """
         super().__init__(name, storage, costs, output_unit)
 
         # TODO add check that inputs does not contain nodes of type NodeOutputProfileBase?
@@ -271,6 +328,8 @@ class NodeFixInputProfile(NodeInputProfileBase):
 
 
 class NodeFixOutputProfile(NodeOutputProfileBase):
+    """A node with a fixed output profile, i.e. output flow for each time stamp is given."""
+
     # Demand
     # FIXME does it make sense that this class supports costs?
     # TODO do we need to support input_proportions here?
@@ -285,6 +344,11 @@ class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
     Note that 0 <= input_flow <= 1 needs to be given otherwise size wouldn't be maximum total
     output of the node because input_flow is multiplied with the size variable.
 
+    Attributes
+    ----------
+    size: linopy.Variable
+        The size of the node.
+
     """
 
     def __init__(
@@ -296,6 +360,25 @@ class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
         output_proportions=None,
         storage=None,
     ):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of the node, must be unique in the network
+        input_flow : xr.DataArray
+            Time series of the input flow. Must be capacity factors, i.e. between 0 and 1.
+        costs : float
+            Costs per unit of size.
+        output_unit : list of str or str
+            Unit of the output commodity.
+        output_proportions : dict
+            Proportions of the output flows. The keys are the names of the output flows and the
+            values are the proportions. The proportions must sum up to 1. If not given, all output
+            commodities must be equal.
+        storage : Storage, optional
+            Storage attached to the node.
+
+        """
         if not ((0 <= input_flow) & (input_flow <= 1)).all():
             raise ValueError(
                 "invalid values in input_flow: must be capacity factors, i.e. between 0 and 1"
@@ -316,20 +399,45 @@ class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
 
 
 class NodeScalableOutputProfile(NodeScalableBase, NodeOutputProfileBase):
+    """Represents a node which has a size variable and a given output profile."""
+
     # TODO what would be the usecase of such a node?!
     # TODO do we need to check if output_flow <= 1? How does scaling work here?
     # TODO do we need the size limit constraint here?
-    # not implemented yet!
-    ...
+    def __init__(self):
+        raise NotImplementedError("NodeScalableOutputProfile is not implemented yet")
 
 
 class Node(NodeScalableBase):
-    """This node has a size."""
+    """Represents a node which has no preset input or output flows or profiles. That means, that
+    input and output flows are determined by the nodes connected to it.
 
-    # examples:
-    #  - electricity
-    #  - hydrogen (with costs > 0)
-    #  - curtailing
+    If `costs` is given, the node has a size variable:
+
+    Attributes
+    ----------
+    size: linopy.Variable
+        The size of the node.
+
+    Examples
+    --------
+
+    **Electrolyzer:** In a network where hydrogen is generated using renewable electricity, the
+    electrolyzer can be modeled to be of type `Node`. It has a size variable, which represents the
+    capacity of the electrolyzer. The input flow is the electricity and the output flow is the
+    hydrogen. The costs are the costs per per unit of capacity.
+
+    **Electricity:** In a network where electricity is produced from different renewable sources,
+    a virtual electricity node, which does not represent real technology, can be used to implement
+    a combined storage.The costs should be set to zero, because the node does not represent a real
+    technology.
+
+    **Curtailment:** In a network with renewable electricity sources, a curtailment node can be
+    used to consume electric energy which cannot be stored or used otherwise. The costs should be
+    set to zero.
+
+    """
+
     def __init__(
         self,
         name,
@@ -343,6 +451,37 @@ class Node(NodeScalableBase):
         storage=None,
         input_flow_costs=0.0,
     ):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of the node, must be unique in the network
+        inputs : list of subclasses of syfob.nodes.NodeBase
+            node objects that are inputs to this node, i.e. from each input node there is a
+            connection to this node
+        input_commodities : list of str
+            List of input commodities. If all inputs have the same commodity, a single string can
+            be given.
+        costs : float
+            Costs per size.
+        output_unit : str
+            Unit of the output commodity.
+        convert_factor : float, optional
+            Conversion factor for the output commodity. Default is 1.0.
+        input_proportions : dict
+            Proportions of the input flows. The keys are the names of the input flows and the
+            values are the proportions. The proportions must sum up to 1. If not given, all input
+            commodities must be equal.
+        output_proportions : dict
+            Proportions of the output flows. The keys are the names of the output flows and the
+            values are the proportions. The proportions must sum up to 1. If not given, all output
+            commodities must be equal.
+        storage : Storage
+            Storage attached to the node.
+        input_flow_costs : float
+            Costs per input flow.
+
+        """
         super().__init__(name, storage, costs, output_unit, convert_factor)
 
         # TODO add check that inputs does not contain nodes of type NodeOutputProfileBase?
