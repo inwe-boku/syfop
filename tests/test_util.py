@@ -26,22 +26,22 @@ def test_constraints_to_str(some_model):
     constraints_as_str = constraints_to_str(some_model)
     expected_output = """
 inout_flow_balance_wind0:
-+1.000000 * flow_wind_demand1
 -0.500000 * size_wind0
++1.000000 * flow_wind_demand1
 =
-0.000000
+-0.000000
 
 inout_flow_balance_wind1:
-+1.000000 * flow_wind_demand2
 -0.500000 * size_wind0
++1.000000 * flow_wind_demand2
 =
-0.000000
+-0.000000
 
 inout_flow_balance_wind2:
-+1.000000 * flow_wind_demand3
 -0.500000 * size_wind0
++1.000000 * flow_wind_demand3
 =
-0.000000
+-0.000000
 
 inout_flow_balance_demand3:
 +1.000000 * flow_wind_demand1

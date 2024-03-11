@@ -280,7 +280,7 @@ class Network:
         This is used as objective in the optimization problem.
 
         The result of the solved optimization can be found in the attribute
-        ``Network.model.objective_value``.
+        ``Network.model.objective.value``.
 
         """
         technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
@@ -299,11 +299,7 @@ class Network:
             assert len(input_flows) == 1, "only one input flow is supported for now"
             costs = costs + node.input_flow_costs * input_flows[0].sum()
 
-        if not isinstance(storage_costs, int):
-            # if there is no technology, storage costs is simply an int and this is not
-            # combinable with a linopy expression uargh... :-/
-            # https://github.com/PyPSA/linopy/issues/60
-            costs = costs + storage_costs
+        costs = costs + storage_costs
 
         return costs
 

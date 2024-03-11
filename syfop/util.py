@@ -48,47 +48,75 @@ def random_time_series(time_coords=DEFAULT_NUM_TIME_STEPS):
 
 
 def print_constraints(m):
-    """
-    Print equations of model `m` in a more or less readable form.
+    """Print equations of model `m` in a more or less readable form.
+
+    Use with caution: see comment in `constraints_to_str()`.
+
     """
     print(constraints_to_str(m))
 
 
 def constraints_to_str(m):
-    from linopy.io import asarray, concatenate, fill_by, float_to_str, int_to_str
+    """Lists all constraints with their names and with the variable names in a more or less
+    readable form.
 
-    m.constraints.sanitize_missings()
-    kwargs = dict(broadcast_like="vars", filter_missings=True)
-    vars = m.constraints.iter_ravel("vars", **kwargs)
-    coeffs = m.constraints.iter_ravel("coeffs", **kwargs)
-    labels = m.constraints.iter_ravel("labels", **kwargs)
+    This function has been copy and pasted from `linopy.io.constraints_to_file()` (linopy version
+    0.3.8) and then modified. The original function writes to a file and simply numbers all
+    constraints and variables, but does not use their real names. The original function is intended
+    to be used to write a model to an lpfile, but this function is intended to be used for
+    debugging and testing.
 
-    labels_ = m.constraints.iter_ravel("labels", filter_missings=True)
-    sign_ = m.constraints.iter_ravel("sign", filter_missings=True)
-    rhs_ = m.constraints.iter_ravel("rhs", filter_missings=True)
+    Use with caution: this function uses inter data structures of linopy and therefore might break
+    with new versions of linopy.
 
-    names = m.constraints.labels.data_vars
+    """
+    if not len(m.constraints):
+        return ""
 
-    iterate = zip(names, labels, vars, coeffs, labels_, sign_, rhs_)
+    names = m.constraints
+    batch = []
+    for name in names:
+        df = m.constraints[name].flat
 
-    out_str = ""
+        labels = df.labels.values
+        vars = df.vars.values
+        coeffs = df.coeffs.values
+        rhs = df.rhs.values
+        sign = df.sign.values
 
-    for (n, l, v, c, l_, s_, r_) in iterate:
-        if not c.size:
+        len_df = len(df)  # compute length once
+        if not len_df:
             continue
 
-        diff_con = l[:-1] != l[1:]
-        new_con_b = concatenate([asarray([True]), diff_con])
-        end_of_con_b = concatenate([diff_con, asarray([True])])
+        # write out the start to enable a fast loop afterwards
+        idx = 0
+        label = labels[idx]
+        coeff = coeffs[idx]
+        var = vars[idx]
+        varname = m.variables.get_name_by_label(var)
+        batch.append(f"\n{name}{label}:\n{coeff:+.6f} * {varname}{var}\n")
+        prev_label = label
+        prev_sign = sign[idx]
+        prev_rhs = rhs[idx]
 
-        l_filled = fill_by(v.shape, new_con_b, "\n" + n + int_to_str(l_) + ":\n")
-        s = fill_by(v.shape, end_of_con_b, "\n" + s_.astype(object) + "\n")
-        r = fill_by(v.shape, end_of_con_b, float_to_str(r_, ensure_sign=False))
+        for idx in range(1, len_df):
+            label = labels[idx]
+            varname = m.variables.get_name_by_label(vars[idx])
+            coeff = coeffs[idx]
+            var = vars[idx]
 
-        varname = np.frompyfunc(lambda i: m.variables.get_name_by_label(i) + "%i" % i, 1, 1)
+            if label != prev_label:
+                batch.append(
+                    f"{prev_sign}\n{prev_rhs:.6f}\n\n{name}{label}:\n"
+                    f"{coeff:+.6f} * {varname}{var}\n"
+                )
+                prev_sign = sign[idx]
+                prev_rhs = rhs[idx]
+            else:
+                batch.append(f"{coeff:+.6f} * {varname}{var}\n")
 
-        constraints = l_filled + float_to_str(c) + " * " + varname(v) + s + r
+            prev_label = label
 
-        out_str += "\n".join(constraints) + "\n"
+        batch.append(f"{prev_sign}\n{prev_rhs:.6f}\n")
 
-    return out_str
+    return "".join(batch)

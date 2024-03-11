@@ -224,7 +224,7 @@ def test_no_input_node(input_flow_costs):
     np.testing.assert_array_almost_equal(network.model.solution.flow_gas_demand, 5.0)
     assert network.model.solution.size_gas == 5.0
 
-    assert network.model.objective_value == 5.0 + expected_input_flow_costs
+    assert network.model.objective.value == 5.0 + expected_input_flow_costs
 
 
 def test_no_output_node():
@@ -476,7 +476,7 @@ def test_network_add_variables():
     """Test adding custom variables."""
     network = simple_demand_network()
     total_energy = network.add_variables(name="total_energy")
-    network.add_constraints(total_energy - network.nodes_dict["wind"].input_flows[""].sum() == 0.0)
+    network.add_constraints(total_energy == network.nodes_dict["wind"].input_flows[""].sum())
     network.optimize()
 
     # we need 5 MW constant demand
