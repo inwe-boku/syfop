@@ -1,7 +1,7 @@
+import logging
 import time
 
 import linopy
-import logging
 import networkx as nx
 import pandas as pd
 from networkx.drawing.nx_agraph import graphviz_layout
@@ -215,7 +215,8 @@ class Network:
         """Add custom constraints to the linopy optimization model. See
         ``linopy.Model.add_constraints()`` for a documentation of the parameters.
 
-        To create the constraint, variables can be accessed via ``Network.model``
+        To create the constraint, variables can be accessed via ``Network.model.variables`` or by
+        node attributes, e.g. in `Network.nodes_dict['wind'].size` for a node with name "wind".
 
         This method must be called before ``Network.optimize()`` is called.
 
@@ -248,7 +249,8 @@ class Network:
         ----------
         solver_name : str, optional
             all solvers supported by `linopy
-            <https://linopy.readthedocs.io/en/latest/solvers.html>`__, by default "highs"
+            <https://linopy.readthedocs.io/en/latest/prerequisites.html#install-a-solver>`__, by
+            default "highs"
         **kwargs
             additional parameters passed to the solver via ``linopy.Model.solve()``.
 
