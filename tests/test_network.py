@@ -437,3 +437,47 @@ def test_infeasible_network():
     )
     with pytest.raises(SolverError, match=error_msg):
         network.optimize(default_solver)
+
+
+def test_network_add_constraints():
+    """Test adding custom constraints."""
+    wind = NodeScalableInputProfile(
+        name="wind",
+        input_flow=const_time_series(0.5),
+        costs=1,
+        output_unit="MW",
+    )
+    demand = NodeFixOutputProfile(
+        name="demand",
+        inputs=[wind],
+        input_commodities="electricity",
+        output_flow=const_time_series(5.0),
+        costs=0,
+        output_unit="MW",
+    )
+    curtailment = Node(
+        name="curtailment",
+        inputs=[wind],
+        input_commodities="electricity",
+        costs=0,
+        output_unit="MW",
+    )
+    network = Network([wind, demand, curtailment])
+
+    # Let's make Sebastian happy and force the system to have at least 15MW of wind :)
+    network.add_constraints(wind.size >= 15)
+    network.optimize()
+
+    assert network.model.solution.size_wind == 15.0
+    np.testing.assert_array_almost_equal(network.model.solution.output_flow_curtailment, 2.5)
+
+
+def test_network_add_variables():
+    """Test adding custom variables."""
+    network = simple_demand_network()
+    total_energy = network.add_variables(name="total_energy")
+    network.add_constraints(total_energy - network.nodes_dict["wind"].input_flows[""].sum() == 0.0)
+    network.optimize()
+
+    # we need 5 MW constant demand
+    assert network.model.solution.total_energy == DEFAULT_NUM_TIME_STEPS * 5.0

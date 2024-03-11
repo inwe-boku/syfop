@@ -202,6 +202,26 @@ class Network:
 
         return model
 
+    def add_variables(self, *args, **kwargs):
+        """Add custom variables to the linopy optimization model. See
+        ``linopy.Model.add_variables()`` for a documentation of the parameters.
+
+        This method must be called before ``Network.optimize()`` is called.
+
+        """
+        return self.model.add_variables(*args, **kwargs)
+
+    def add_constraints(self, *args, **kwargs):
+        """Add custom constraints to the linopy optimization model. See
+        ``linopy.Model.add_constraints()`` for a documentation of the parameters.
+
+        To create the constraint, variables can be accessed via ``Network.model``
+
+        This method must be called before ``Network.optimize()`` is called.
+
+        """
+        return self.model.add_constraints(*args, **kwargs)
+
     def _check_storage_level_zero(self):
         """This is a basic plausibility check. A storage which is never full or never empty
         could be replaced by a smaller storage, which would be advantageous if costs are
