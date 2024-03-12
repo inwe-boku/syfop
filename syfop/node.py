@@ -301,6 +301,8 @@ class NodeOutputProfileBase(NodeBase):
         """
         super().__init__(name, storage, costs, output_unit)
 
+        # XXX convert_factor is not needed for output nodes?
+
         # TODO add check that inputs does not contain nodes of type NodeOutputProfileBase?
         self.inputs = inputs
 
@@ -355,6 +357,7 @@ class NodeFixOutputProfile(NodeOutputProfileBase):
 
     # FIXME does it make sense that this class supports costs?
     # TODO do we need to support input_proportions here?
+    # FIXME if this has no size, but costs, would it fail?
     ...
 
 
@@ -529,6 +532,7 @@ class Node(NodeScalableBase):
     def create_constraints(self, model):
         super().create_constraints(model)
 
+        # XXX why is this not needed in scalable classes?
         # constraint: size of technology
         if self.size is not None:
             lhs = sum(self.output_flows.values()) - self.size
