@@ -1,3 +1,5 @@
+from sphinxawesome_theme.postprocess import Icons
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -14,8 +16,9 @@ author = "BOKU University"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",  # support for automatic documentation of docstrings
+    "sphinx.ext.napoleon",  # support for numpy and google docstrings
+    "sphinx.ext.viewcode",  # show source code in documentation
 ]
 
 templates_path = ["_templates"]
@@ -25,6 +28,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 autoclass_content = "both"
 # autodoc_class_signature = "separated"
 
+# this fixes the anchor links to sections, quite ugly otherwise
+html_permalinks_icon = Icons.permalinks_icon
 
 # no idea what this does
 # autosummary_generate = True
