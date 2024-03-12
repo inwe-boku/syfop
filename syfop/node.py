@@ -322,15 +322,37 @@ class NodeOutputProfileBase(NodeBase):
 
 
 class NodeFixInputProfile(NodeInputProfileBase):
-    # CO2
+    """A node with a fixed input profile, i.e. input flow for each time stamp is given. There is no
+    size variable and no scaling.
+
+    Example
+    -------
+
+    **CO2 stream:** A node representing the CO2 stream from a ethanol refineries, which can be used
+    to produce methanol. The CO2 stream is given as a fixed time series, which involves the
+    seasonality of the ethanol production (e.g. given by fermentation of sugar cane).
+
+    See also:
+    https://doi.org/10.1038/s41467-022-30850-2
+
+    """
+
     # FIXME does it make sense that this class supports costs? they won't be scaled...
     ...
 
 
 class NodeFixOutputProfile(NodeOutputProfileBase):
-    """A node with a fixed output profile, i.e. output flow for each time stamp is given."""
+    """A node with a fixed output profile, i.e. output flow for each time stamp is given.
 
-    # Demand
+    Example
+    -------
+
+    **Demand:** A node representing the demand of a certain commodity. The demand is given as a
+    fixed time series. Imagine the demand of electricity in a certain region for each hour over a
+    year.
+
+    """
+
     # FIXME does it make sense that this class supports costs?
     # TODO do we need to support input_proportions here?
     ...
