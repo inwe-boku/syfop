@@ -2,13 +2,7 @@ import numpy as np
 import pytest
 
 from syfop.network import Network, SolverError
-from syfop.node import (
-    Node,
-    NodeFixInputProfile,
-    NodeFixOutputProfile,
-    NodeScalableInputProfile,
-    Storage,
-)
+from syfop.node import Node, NodeFixInput, NodeFixOutput, NodeScalableInput, Storage
 from syfop.util import DEFAULT_NUM_TIME_STEPS, const_time_series
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs", "cplex"])
@@ -20,10 +14,10 @@ def test_expensive_solar_pv(solver):
     """If PV is more expensive than wind, the model should choose only wind (for constant wind/PV
     profiles)."""
 
-    wind = NodeScalableInputProfile(
+    wind = NodeScalableInput(
         name="wind", input_flow=const_time_series(0.5), costs=1, output_unit="MW"
     )
-    solar_pv = NodeScalableInputProfile(
+    solar_pv = NodeScalableInput(
         name="solar_pv", input_flow=const_time_series(0.5), costs=20.0, output_unit="MW"
     )
 
@@ -35,9 +29,7 @@ def test_expensive_solar_pv(solver):
         output_unit="MW",
     )
 
-    co2 = NodeFixInputProfile(
-        name="co2", input_flow=const_time_series(5), costs=0, output_unit="t"
-    )
+    co2 = NodeFixInput(name="co2", input_flow=const_time_series(5), costs=0, output_unit="t")
 
     methanol_synthesis = Node(
         name="methanol_synthesis",
@@ -134,7 +126,7 @@ def test_simple_co2_storage(storage_type):
     else:
         raise ValueError(f"invalid storage_type: {storage_type}")
 
-    wind = NodeScalableInputProfile(
+    wind = NodeScalableInput(
         name="wind",
         input_flow=wind_flow,
         costs=1.3,
@@ -149,7 +141,7 @@ def test_simple_co2_storage(storage_type):
         output_unit="t",
         storage=hydrogen_storage,
     )
-    co2 = NodeFixInputProfile(
+    co2 = NodeFixInput(
         name="co2", input_flow=co2_flow, storage=co2_storage, costs=0, output_unit="t"
     )
 
@@ -227,7 +219,7 @@ def test_no_input_node(input_flow_costs):
     gas = Node(
         name="gas", inputs=[], input_commodities="gas", costs=1, output_unit="MW", **extra_kwrgs
     )
-    demand = NodeFixOutputProfile(
+    demand = NodeFixOutput(
         name="demand",
         inputs=[gas],
         input_commodities="electricity",
@@ -247,10 +239,10 @@ def test_no_input_node(input_flow_costs):
 
 def test_no_output_node():
     time_coords = 10
-    wind = NodeFixInputProfile(
+    wind = NodeFixInput(
         name="wind",
         input_flow=const_time_series(5, time_coords=time_coords),
-        costs=0,  # FIXME NodeFixInputProfile is not usable if we don't set the size to 0
+        costs=0,  # FIXME NodeFixInput is not usable if we don't set the size to 0
         output_unit="t",
     )
     hydrogen = Node(
@@ -268,13 +260,13 @@ def test_no_output_node():
 
 
 def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.5):
-    wind = NodeScalableInputProfile(
+    wind = NodeScalableInput(
         name="wind",
         input_flow=const_time_series(wind_input_flow, time_coords=time_coords),
         costs=1,
         output_unit="MW",
     )
-    demand = NodeFixOutputProfile(
+    demand = NodeFixOutput(
         name="demand",
         inputs=[wind],
         input_commodities="electricity",
@@ -308,7 +300,7 @@ def test_inconsistent_time_coords(input_output, wrong_length):
         time_coords_params[input_output] = {"time_coords_year": 2019}
         error_msg_pattern = f" has an {input_output} flow with time_coords different from the"
 
-    wind = NodeScalableInputProfile(
+    wind = NodeScalableInput(
         name="wind",
         input_flow=const_time_series(0.42, **time_coords_params["input"]),
         costs=1,
@@ -321,7 +313,7 @@ def test_inconsistent_time_coords(input_output, wrong_length):
         costs=0,
         output_unit="MW",
     )
-    demand = NodeFixOutputProfile(
+    demand = NodeFixOutput(
         name="demand",
         inputs=[electricity],
         output_flow=const_time_series(0.42, **time_coords_params["output"]),
@@ -352,7 +344,7 @@ def test_hot_chocolate(with_curtailment):
     # we will need size = 8 to get 8g per time stamp
     cacao_delivery_flow = const_time_series(1.0, time_coords=time_coords)
 
-    cow = NodeScalableInputProfile(
+    cow = NodeScalableInput(
         name="cow",
         input_flow=milk_flow,
         # this is a weird workaround, because we know only the milk price, but costs here is
@@ -362,7 +354,7 @@ def test_hot_chocolate(with_curtailment):
     )
 
     # 1g of cacao powder is 1.67ml if desolved in milk
-    cacao_delivery = NodeScalableInputProfile(
+    cacao_delivery = NodeScalableInput(
         name="cacao_delivery",
         input_flow=cacao_delivery_flow,
         # workaround, same as for cow costs
@@ -382,7 +374,7 @@ def test_hot_chocolate(with_curtailment):
     )
 
     # the consumer drinks 1 cup of cocao per time stamp, which is 240ml of milk and 8g of cacao
-    hot_chocolate_consumer = NodeFixOutputProfile(
+    hot_chocolate_consumer = NodeFixOutput(
         name="hot_chocolate_consumer",
         inputs=[hot_chocolate],
         input_commodities="hot_chocolate",
@@ -459,13 +451,13 @@ def test_infeasible_network():
 
 def test_network_add_constraints():
     """Test adding custom constraints."""
-    wind = NodeScalableInputProfile(
+    wind = NodeScalableInput(
         name="wind",
         input_flow=const_time_series(0.5),
         costs=1,
         output_unit="MW",
     )
-    demand = NodeFixOutputProfile(
+    demand = NodeFixOutput(
         name="demand",
         inputs=[wind],
         input_commodities="electricity",

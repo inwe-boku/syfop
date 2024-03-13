@@ -105,7 +105,7 @@ How to use
 
 
 ```python
-node1 = NodeScalableInputProfile(
+node1 = NodeScalableInput(
     name="node1",
     input_flow=random_time_series(),
     costs=10,
@@ -114,7 +114,7 @@ node1 = NodeScalableInputProfile(
 ```
 
 ```python
-node2 = NodeFixInputProfile(
+node2 = NodeFixInput(
     name="node2",
     costs=0,
     input_flow=random_time_series(),

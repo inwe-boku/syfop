@@ -145,7 +145,7 @@ class NodeBase:
         # workaround if rhs is not a constant.
         # will be obsolete as soon as this is implemented:
         #   https://github.com/PyPSA/linopy/issues/60
-        # Note that rhs is only a constant if self is an instance of NodeInputProfileBase with
+        # Note that rhs is only a constant if self is an instance of NodeInputBase with
         # only one input, which is an xr.DataArray.
         #
         # Update 2024-03-11: with linopy 0.3.8 this should be obsolete, but it works only by adding
@@ -159,11 +159,11 @@ class NodeBase:
         if not isinstance(lhs, linopy.Variable) and not isinstance(lhs, linopy.LinearExpression):
             if self.storage is not None:
                 # lhs means that sum of output flow nodes is not a variable, which means that we
-                # have a self is of type NodeFixOutputProfile. then storage doesn't really make
+                # have a self is of type NodeFixOutput. then storage doesn't really make
                 # sense, so we can simply forbid this case.
                 # If we want to support it, we need to take care of a wrong sign when adding charge
                 # and discharge below to lhs.
-                raise RuntimeError("NodeFixOutputProfile with Storage not supported")
+                raise RuntimeError("NodeFixOutput with Storage not supported")
             lhs, rhs = rhs, lhs
         if isinstance(rhs, linopy.Variable) or isinstance(rhs, linopy.LinearExpression):
             lhs = lhs - rhs
@@ -209,7 +209,7 @@ class NodeScalableBase(NodeBase):
             self.size = model.add_variables(name=f"size_{self.name}", lower=0)
 
 
-class NodeInputProfileBase(NodeBase):
+class NodeInputBase(NodeBase):
     """A Base class for all node types with a given input time series (profile or fixed
     input_flow).
 
@@ -257,7 +257,7 @@ class NodeInputProfileBase(NodeBase):
         ...
 
 
-class NodeOutputProfileBase(NodeBase):
+class NodeOutputBase(NodeBase):
     """A Base class for all node types with a given output time series (profile or fixed
     output_flow).
 
@@ -303,7 +303,7 @@ class NodeOutputProfileBase(NodeBase):
 
         # XXX convert_factor is not needed for output nodes?
 
-        # TODO add check that inputs does not contain nodes of type NodeOutputProfileBase?
+        # TODO add check that inputs does not contain nodes of type NodeOutputBase?
         self.inputs = inputs
 
         # str = equal for each input

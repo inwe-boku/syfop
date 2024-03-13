@@ -1,17 +1,17 @@
 import pytest
 
-from syfop.node import Node, NodeScalableInputProfile
+from syfop.node import Node, NodeScalableInput
 from syfop.util import const_time_series
 
-# TODO missing tests: NodeFixInputProfile, NodeFixOutputProfile, NodeScalableOutputProfile
+# TODO missing tests: NodeFixInput, NodeFixOutput, NodeScalableOutput
 
 
 @pytest.fixture
 def three_example_nodes():
-    wind = NodeScalableInputProfile(
+    wind = NodeScalableInput(
         name="wind", input_flow=const_time_series(0.5), costs=1, output_unit="MW"
     )
-    solar_pv = NodeScalableInputProfile(
+    solar_pv = NodeScalableInput(
         name="solar_pv", input_flow=const_time_series(0.5), costs=20.0, output_unit="MW"
     )
     electricity = Node(
@@ -96,7 +96,7 @@ def test_input_flow_not_capacity_factor():
     error_msg = "invalid values in input_flow: must be capacity factors"
 
     with pytest.raises(ValueError, match=error_msg):
-        _ = NodeScalableInputProfile(
+        _ = NodeScalableInput(
             name="wind",
             input_flow=const_time_series(1.5),
             costs=1,
@@ -104,7 +104,7 @@ def test_input_flow_not_capacity_factor():
         )
 
     with pytest.raises(ValueError, match=error_msg):
-        _ = NodeScalableInputProfile(
+        _ = NodeScalableInput(
             name="wind",
             input_flow=const_time_series(-0.5),
             costs=1,

@@ -1,11 +1,7 @@
-from syfop.node_base import (
-    NodeInputProfileBase,
-    NodeOutputProfileBase,
-    NodeScalableBase,
-)
+from syfop.node_base import NodeInputBase, NodeOutputBase, NodeScalableBase
 
 
-class NodeFixInputProfile(NodeInputProfileBase):
+class NodeFixInput(NodeInputBase):
     """A node with a fixed input profile, i.e. input flow for each time stamp is given. There is no
     size variable and no scaling.
 
@@ -25,7 +21,7 @@ class NodeFixInputProfile(NodeInputProfileBase):
     ...
 
 
-class NodeFixOutputProfile(NodeOutputProfileBase):
+class NodeFixOutput(NodeOutputBase):
     """A node with a fixed output profile, i.e. output flow for each time stamp is given.
 
     Example
@@ -43,7 +39,7 @@ class NodeFixOutputProfile(NodeOutputProfileBase):
     ...
 
 
-class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
+class NodeScalableInput(NodeScalableBase, NodeInputBase):
     """A given input profile is scaled by a size variable.
 
     Use cases: wind or PV time series as capacity factors and size is the installed capacity.
@@ -105,14 +101,14 @@ class NodeScalableInputProfile(NodeScalableBase, NodeInputProfileBase):
         self.input_flows[""] = self.size * self.input_flows[""]
 
 
-class NodeScalableOutputProfile(NodeScalableBase, NodeOutputProfileBase):
+class NodeScalableOutput(NodeScalableBase, NodeOutputBase):
     """Represents a node which has a size variable and a given output profile."""
 
     # TODO what would be the usecase of such a node?!
     # TODO do we need to check if output_flow <= 1? How does scaling work here?
     # TODO do we need the size limit constraint here?
     def __init__(self):
-        raise NotImplementedError("NodeScalableOutputProfile is not implemented yet")
+        raise NotImplementedError("NodeScalableOutput is not implemented yet")
 
 
 class Node(NodeScalableBase):
@@ -191,7 +187,7 @@ class Node(NodeScalableBase):
         """
         super().__init__(name, storage, costs, output_unit, convert_factor)
 
-        # TODO add check that inputs does not contain nodes of type NodeOutputProfileBase?
+        # TODO add check that inputs does not contain nodes of type NodeOutputBase?
         self.inputs = inputs
 
         # str = equal for each input

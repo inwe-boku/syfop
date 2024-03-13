@@ -6,7 +6,7 @@ import networkx as nx
 import pandas as pd
 from networkx.drawing.nx_agraph import graphviz_layout
 
-from syfop.node_base import NodeInputProfileBase, NodeOutputProfileBase
+from syfop.node_base import NodeInputBase, NodeOutputBase
 from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
@@ -114,9 +114,9 @@ class Network:
     def _create_graph(self, nodes):
         graph = nx.DiGraph()
         for node in nodes:
-            if isinstance(node, NodeInputProfileBase):
+            if isinstance(node, NodeInputBase):
                 color = "#c72321"
-            elif isinstance(node, NodeOutputProfileBase):
+            elif isinstance(node, NodeOutputBase):
                 color = "#f0c220"
             else:
                 color = "#000000"
@@ -162,7 +162,7 @@ class Network:
                 input_.outputs.append(node)
 
         # output connections are not known when Node objects are created, so we add
-        # it to the Node objects here, except for nodes which are NodeOutputProfileBase
+        # it to the Node objects here, except for nodes which are NodeOutputeBase
         for node in nodes:
             if node.output_flows is None:
                 node.output_flows = {
