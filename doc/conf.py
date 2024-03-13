@@ -1,4 +1,9 @@
+import os
+import sys
+
 from sphinxawesome_theme.postprocess import Icons
+
+sys.path.insert(0, os.path.abspath(".."))
 
 # Configuration file for the Sphinx documentation builder.
 #
