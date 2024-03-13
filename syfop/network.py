@@ -6,7 +6,7 @@ import networkx as nx
 import pandas as pd
 from networkx.drawing.nx_agraph import graphviz_layout
 
-from syfop.node import NodeInputProfileBase, NodeOutputProfileBase
+from syfop.node_base import NodeInputProfileBase, NodeOutputProfileBase
 from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
