@@ -87,7 +87,8 @@ build-backend = "poetry.core.masonry.api"
 # https://docs.pytest.org/en/stable/customize.html
 addopts = '''
 -ra
---tb=line
+--tb=auto
+-k "not gurobi"
 -W error
 --doctest-modules
 '''
