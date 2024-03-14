@@ -42,22 +42,23 @@ class NodeFixOutput(NodeOutputBase):
 class NodeScalableInput(NodeScalableBase, NodeInputBase):
     """A given input profile is scaled by a size variable.
 
-    Use cases: wind or PV time series as capacity factors and size is the installed capacity.
-
-    Note that 0 <= input_flow <= 1 needs to be given otherwise size wouldn't be maximum total
-    output of the node because input_flow is multiplied with the size variable.
-
     Attributes
     ----------
     size: linopy.Variable
         The size of the node.
+
+    Example use case
+    ----------------
+
+    The node represents wind or PV electricity generation. Capacity factor time series are given
+    and multiplied with a size variable to create the input flow.
 
     """
 
     def __init__(
         self,
         name,
-        input_flow,
+        input_profile,
         costs,
         output_unit,
         output_proportions=None,
@@ -68,7 +69,7 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
         ----------
         name : str
             Name of the node, must be unique in the network
-        input_flow : xr.DataArray
+        input_profile : xr.DataArray
             Time series of the input flow. Must be capacity factors, i.e. between 0 and 1.
         costs : float
             Costs per unit of size.
@@ -82,23 +83,26 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
             Storage attached to the node.
 
         """
-        if not ((0 <= input_flow) & (input_flow <= 1)).all():
+        if not ((0 <= input_profile) & (input_profile <= 1)).all():
             raise ValueError(
-                "invalid values in input_flow: must be capacity factors, i.e. between 0 and 1"
+                "invalid values in input_profile: must be capacity factors, i.e. between 0 and 1"
             )
 
+        self.input_profile = input_profile
+
         super().__init__(
-            name,
-            input_flow,
-            costs,
-            output_unit,
+            name=name,
+            input_flow=None,  # overwritten by create_variables()
+            costs=costs,
+            output_unit=output_unit,
             output_proportions=output_proportions,
             storage=storage,
         )
+        self.input_flows = None
 
     def create_variables(self, model, time_coords):
         super().create_variables(model, time_coords)
-        self.input_flows[""] = self.size * self.input_flows[""]
+        self.input_flows = {"": self.size * self.input_profile}
 
 
 class NodeScalableOutput(NodeScalableBase, NodeOutputBase):
@@ -108,6 +112,8 @@ class NodeScalableOutput(NodeScalableBase, NodeOutputBase):
     # TODO do we need to check if output_flow <= 1? How does scaling work here?
     # TODO do we need the size limit constraint here?
     def __init__(self):
+        """Note: This is not implemented yet!"""
+        # this would be probably more less the same as NodeScalableInput, right?
         raise NotImplementedError("NodeScalableOutput is not implemented yet")
 
 

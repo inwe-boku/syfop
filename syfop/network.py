@@ -88,27 +88,32 @@ class Network:
     def _check_consistent_time_coords(self, nodes, time_coords):
         # all time series need to be defined on the same coordinates otherwise vector comparison
         # will lead to empty constraints
-        for input_output in ("input", "output"):
+        for field in ("input_flows", "output_flows", "input_profile", "output_profile"):
             for node in nodes:
-                if (
-                    not hasattr(node, f"{input_output}_flows")
-                    or getattr(node, f"{input_output}_flows") is None
-                ):
+                if not hasattr(node, field) or getattr(node, field) is None:
                     # don't need to check flows created later than this check, because these are
                     # filled with flows using self.time_coords
                     continue
 
-                for flow in getattr(node, f"{input_output}_flows").values():
+                flows = getattr(node, field)
+                if isinstance(flows, dict):
+                    flows = flows.values()
+                    field_title = "an item in"
+                else:
+                    flows = [flows]
+                    field_title = "an"
+
+                for flow in flows:
                     if len(flow.time) != len(time_coords):
                         raise ValueError(
-                            f"inconsistent time_coords: node {node.name} has an {input_output} "
-                            f"flow with length {len(flow.time)}, but the network has time_coords "
+                            f"inconsistent time_coords: node {node.name} has {field_title} {field} "
+                            f"with length {len(flow.time)}, but the network has time_coords "
                             f"with length {len(time_coords)}"
                         )
                     if (flow.time != time_coords).any():
                         raise ValueError(
-                            f"inconsistent time_coords: node {node.name} has an {input_output} "
-                            "flow with time_coords different from the Network's time_coords"
+                            f"inconsistent time_coords: node {node.name} has {field_title} {field} "
+                            "with time_coords different from the Network's time_coords"
                         )
 
     def _create_graph(self, nodes):

@@ -107,7 +107,7 @@ How to use
 ```python
 node1 = NodeScalableInput(
     name="node1",
-    input_flow=random_time_series(),
+    input_profile=random_time_series(),
     costs=10,
     output_unit="MW",
 )

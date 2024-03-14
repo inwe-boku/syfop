@@ -9,10 +9,10 @@ from syfop.util import const_time_series
 @pytest.fixture
 def three_example_nodes():
     wind = NodeScalableInput(
-        name="wind", input_flow=const_time_series(0.5), costs=1, output_unit="MW"
+        name="wind", input_profile=const_time_series(0.5), costs=1, output_unit="MW"
     )
     solar_pv = NodeScalableInput(
-        name="solar_pv", input_flow=const_time_series(0.5), costs=20.0, output_unit="MW"
+        name="solar_pv", input_profile=const_time_series(0.5), costs=20.0, output_unit="MW"
     )
     electricity = Node(
         name="electricity",
@@ -92,13 +92,13 @@ def test_missing_input_proportions_but_different_commodities(three_example_nodes
         )
 
 
-def test_input_flow_not_capacity_factor():
-    error_msg = "invalid values in input_flow: must be capacity factors"
+def test_input_profile_not_capacity_factor():
+    error_msg = "invalid values in input_profile: must be capacity factors"
 
     with pytest.raises(ValueError, match=error_msg):
         _ = NodeScalableInput(
             name="wind",
-            input_flow=const_time_series(1.5),
+            input_profile=const_time_series(1.5),
             costs=1,
             output_unit="MW",
         )
@@ -106,7 +106,7 @@ def test_input_flow_not_capacity_factor():
     with pytest.raises(ValueError, match=error_msg):
         _ = NodeScalableInput(
             name="wind",
-            input_flow=const_time_series(-0.5),
+            input_profile=const_time_series(-0.5),
             costs=1,
             output_unit="MW",
         )

@@ -15,10 +15,10 @@ def test_expensive_solar_pv(solver):
     profiles)."""
 
     wind = NodeScalableInput(
-        name="wind", input_flow=const_time_series(0.5), costs=1, output_unit="MW"
+        name="wind", input_profile=const_time_series(0.5), costs=1, output_unit="MW"
     )
     solar_pv = NodeScalableInput(
-        name="solar_pv", input_flow=const_time_series(0.5), costs=20.0, output_unit="MW"
+        name="solar_pv", input_profile=const_time_series(0.5), costs=20.0, output_unit="MW"
     )
 
     electricity = Node(
@@ -128,7 +128,7 @@ def test_simple_co2_storage(storage_type):
 
     wind = NodeScalableInput(
         name="wind",
-        input_flow=wind_flow,
+        input_profile=wind_flow,
         costs=1.3,
         output_unit="MW",
         storage=electricity_storage,
@@ -262,7 +262,7 @@ def test_no_output_node():
 def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.5):
     wind = NodeScalableInput(
         name="wind",
-        input_flow=const_time_series(wind_input_flow, time_coords=time_coords),
+        input_profile=const_time_series(wind_input_flow, time_coords=time_coords),
         costs=1,
         output_unit="MW",
     )
@@ -295,14 +295,14 @@ def test_inconsistent_time_coords(input_output, wrong_length):
     time_coords_params = {"input": {}, "output": {}}
     if wrong_length:
         time_coords_params[input_output] = {"time_coords": 42}
-        error_msg_pattern = f"has an {input_output} flow with length"
+        error_msg_pattern = f"has an .*{input_output}.* with length"
     else:
         time_coords_params[input_output] = {"time_coords_year": 2019}
-        error_msg_pattern = f" has an {input_output} flow with time_coords different from the"
+        error_msg_pattern = f" has an .*{input_output}.* with time_coords different from the"
 
     wind = NodeScalableInput(
         name="wind",
-        input_flow=const_time_series(0.42, **time_coords_params["input"]),
+        input_profile=const_time_series(0.42, **time_coords_params["input"]),
         costs=1,
         output_unit="MW",
     )
@@ -346,7 +346,7 @@ def test_hot_chocolate(with_curtailment):
 
     cow = NodeScalableInput(
         name="cow",
-        input_flow=milk_flow,
+        input_profile=milk_flow,
         # this is a weird workaround, because we know only the milk price, but costs here is
         # relative to the cow size not to the amount of milk
         costs=1.49 * milk_flow[0],  # in EUR/l
@@ -356,7 +356,7 @@ def test_hot_chocolate(with_curtailment):
     # 1g of cacao powder is 1.67ml if desolved in milk
     cacao_delivery = NodeScalableInput(
         name="cacao_delivery",
-        input_flow=cacao_delivery_flow,
+        input_profile=cacao_delivery_flow,
         # workaround, same as for cow costs
         costs=3.2e-3 * cacao_delivery_flow[0],  # in EUR/g
         output_unit="g",
@@ -453,7 +453,7 @@ def test_network_add_constraints():
     """Test adding custom constraints."""
     wind = NodeScalableInput(
         name="wind",
-        input_flow=const_time_series(0.5),
+        input_profile=const_time_series(0.5),
         costs=1,
         output_unit="MW",
     )
