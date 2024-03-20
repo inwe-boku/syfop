@@ -8,37 +8,6 @@
 [![Documentation Status](https://readthedocs.org/projects/syfop/badge/?version=latest)](https://syfop.readthedocs.io/)
 
 
-<!--
- [![Version](http://img.shields.io/pypi/v/ppw?color=brightgreen)](https://pypi.python.org/pypi/ppw)
-[![CI Status](https://github.com/zillionare/python-project-wizard/actions/workflows/release.yml/badge.svg)](https://github.com/zillionare/python-project-wizard)
-[![Dowloads](https://img.shields.io/pypi/dm/ppw)](https://pypi.org/project/ppw/)
-![Python Versions](https://img.shields.io/pypi/pyversions/ppw)
--->
-
-<!--
-<p align="center">
-<a href="https://pypi.python.org/pypi/syfop">
-    <img src="https://img.shields.io/pypi/v/syfop.svg" alt = "Release Status">
-</a>
-
-<a href="https://inwe-boku.github.io/syfop/">
-    <img src="https://img.shields.io/website/https/inwe-boku.github.io/syfop/index.html.svg?label=docs&down_message=unavailable&up_message=available" alt="Documentation Status">
-</a>
-
-<a href="https://pyup.io/repos/github/lumbric/syfop/">
-<img src="https://pyup.io/repos/github/lumbric/syfop/shield.svg" alt="Updates">
-</a>
-
-get inspiration for more badges here:
-https://raw.githubusercontent.com/PyPSA/PyPSA/master/README.md
-
--->
-
-<!--
- * Documentation: <https://inwe-boku.github.io/syfop/>
--->
-
-
 `syfop` allows the user to model a network, where commodities run through nodes representing
 certain types of technologies. In a second step, sizes of the nodes are optimized to be cost
 optimal with respect to constraints introduced by the network. The optimization uses discrete time
