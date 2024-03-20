@@ -1,6 +1,20 @@
+import numpy as np
 import pytest
 
-from syfop.util import constraints_to_str, print_constraints, random_time_series
+from syfop.util import (
+    const_time_series,
+    constraints_to_str,
+    print_constraints,
+    random_time_series,
+)
+
+
+def test_const_time_series():
+    time_series = const_time_series(value=23, time_coords=42, time_coords_year=2020)
+    assert time_series.sizes["time"] == 42
+    assert (time_series == 23).all()
+    assert (time_series.time[0].dt.year == 2020).all()
+    assert (time_series.time[1] - time_series.time[0]) == np.timedelta64(1, "h")
 
 
 @pytest.mark.parametrize("time_coords", [42, range(42)])

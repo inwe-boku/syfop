@@ -22,7 +22,7 @@ def const_time_series(value, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_yea
 
     """
     if isinstance(time_coords, int):
-        time_coords = pd.date_range(time_coords_year, freq="h", periods=time_coords)
+        time_coords = pd.date_range(str(time_coords_year), freq="h", periods=time_coords)
 
     return xr.DataArray(
         value * np.ones(len(time_coords)),

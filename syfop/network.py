@@ -74,7 +74,7 @@ class Network:
 
         # minor code duplication with util.const_time_series(), but should not matter too much
         if isinstance(time_coords, int):
-            time_coords = pd.date_range(time_coords_year, freq="h", periods=time_coords)
+            time_coords = pd.date_range(str(time_coords_year), freq="h", periods=time_coords)
         self.time_coords = time_coords
 
         self._check_consistent_time_coords(nodes, time_coords)
