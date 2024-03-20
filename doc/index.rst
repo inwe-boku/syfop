@@ -2,13 +2,13 @@ syfop - Synthetic fuel optimizer
 ================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
-   :caption: API Reference
-   :glob:
    :titlesonly:
 
-   api_reference/*
+   usage
+   limitations
+   api_reference/index
 
 `syfop` allows the user to model a network, where commodities run through nodes representing
 certain types of technologies. In a second step, sizes of the nodes are optimized to be cost
