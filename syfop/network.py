@@ -142,15 +142,18 @@ class Network:
         # Add a variable for nodes, which do not have input flows or output flows. This variable
         # should be simply the sum of output flows (for the input flow variable) or sum of input
         # flows (for the output flow variable).
-        # This is not really needed but nice to have to see the values in the solution and
-        # output_flow comes in handy in to be in the size constraints.
+        # In most cases this is not really needed but nice to have to see the values in the
+        # solution and output_flow comes in handy in to be in the size constraints.
+        # When input_flow_costs is set on nodes which do not have any other inputs set (fixed,
+        # profile or other nodes), this is used to determine the total input_flow_costs. Also it
+        # makes the constraints easier because we never have empty sums.
         for node in nodes:
             if len(node.input_flows) == 0:
-                node.input_flows[node.name] = timeseries_variable(
+                node.input_flows[""] = timeseries_variable(
                     model, self.time_coords, f"input_flow_{node.name}"
                 )
             if len(node.output_flows) == 0:
-                node.output_flows[node.name] = timeseries_variable(
+                node.output_flows[""] = timeseries_variable(
                     model, self.time_coords, f"output_flow_{node.name}"
                 )
 
