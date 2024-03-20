@@ -286,6 +286,9 @@ class Storage:
         self.storage_loss = storage_loss
         self.charging_loss = charging_loss
 
-        assert storage_loss < 1
-        assert charging_loss < 1
-        assert max_charging_speed <= 1
+        # a loss which equals to 1 does not make sense, because everything would be lost
+        # if charging_loss == 0. solutions might be indeterministic because charging and
+        # discharging might be done in the same time stamp
+        assert 0 <= storage_loss < 1, "storage_loss must be smaller than 1"
+        assert 0 <= charging_loss < 1, "charging_loss must be smaller than 1"
+        assert 0 < max_charging_speed <= 1, "max_charging_speed must not be greater than 1"
