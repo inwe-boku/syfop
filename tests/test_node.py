@@ -3,8 +3,6 @@ import pytest
 from syfop.node import Node, NodeScalableInput
 from syfop.util import const_time_series
 
-# TODO missing tests: NodeFixInput, NodeFixOutput, NodeScalableOutput
-
 
 @pytest.fixture
 def three_example_nodes():

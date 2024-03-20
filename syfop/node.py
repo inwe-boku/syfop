@@ -47,8 +47,9 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
     size: linopy.Variable
         The size of the node.
 
-    Example use case
-    ----------------
+
+    Example
+    -------
 
     The node represents wind or PV electricity generation. Capacity factor time series are given
     and multiplied with a size variable to create the input flow.
@@ -188,7 +189,11 @@ class Node(NodeScalableBase):
         storage : Storage
             Storage attached to the node.
         input_flow_costs : float
-            Costs per input flow.
+            Costs per unit of input flow. Use this to add fuel costs. At the moment this is not
+            available for oder node types: NodeFixInput would add constant input flow costs, which
+            does not change the optimation result and NodeScalableInput would add costs which are
+            proportional to its size, which could be added to the ``costs`` parameter.
+            At maximum one input node is allowed if ``input_flow_costs>0``.
 
         """
         super().__init__(name, storage, costs, output_unit, convert_factor)
@@ -236,10 +241,46 @@ class Storage:
     commodity of its node. Storage for nodes with multiple output commodities are not supported at
     the moment.
 
+    **Examples:** hydrogen storage, CO2 storage, battery.
+
+    Attributes
+    ----------
+    size : linopy.Variable
+        The size of the storage.
+    level : linopy.Variable
+        The level of the storage for each time stamp, i.e. the amount of the stored commodity.
+    charge : linopy.Variable
+        The amount of the commodity that is charged into the storage for each time stamp.
+    discharge : linopy.Variable
+        The amount of the commodity that is discharged from the storage for each time stamp. A
+        positive value for ``charge`` and ``discharge`` in the same time stamp does not make sense,
+        but it is not forbidden in any way. However, such a case will not be optimal if
+        ``charging_loss>0``.
+
     """
 
-    # note: atm this is not a node
+    # Note: atm this is not implemented as node class. Probably could be done, but might be more
+    # complicated to be implemented
     def __init__(self, costs, max_charging_speed, storage_loss, charging_loss):
+        """
+        Parameters
+        ----------
+        costs : float
+            Storage costs per unit of size
+        max_charging_speed : float
+            Maximum charging speed, i.e. the share of the total size that can be charged per time
+            stamp. For example, if the maximum charging speed is 0.5, two time stamps are needed to
+            charge the storage completely.
+        storage_loss : float
+            Loss of stored commodity per time stamp as share of the stored commodity. For example,
+            if the storage loss for a battery is 0.01 and the battery is half full, 0.5% of the
+            battery capacity is lost in the next time stamp.
+        charging_loss : float
+            Loss of charged commodity per time stamp as share of the charged commodity. For
+            example, if ``charging_loss`` is 0.01 and there is 100kg of excess hydrogen to be
+            stored in a certain timestamp, only 99kg will end up in the storage.
+
+        """
         self.costs = costs  # per size
         self.max_charging_speed = max_charging_speed  # unit: share of total size per timestamp
         self.storage_loss = storage_loss
@@ -248,8 +289,3 @@ class Storage:
         assert storage_loss < 1
         assert charging_loss < 1
         assert max_charging_speed <= 1
-
-    # usage examples:
-    #  - h2 storage
-    #  - co2 storage
-    #  - battery

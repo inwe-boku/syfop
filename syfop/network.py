@@ -297,6 +297,7 @@ class Network:
 
         costs = technology_costs
 
+        # add costs for input_flows (e.g. fuel costs) if defined
         for node in self.nodes:
             if not hasattr(node, "input_flow_costs") or node.input_flow_costs == 0.0:
                 continue
