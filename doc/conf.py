@@ -57,6 +57,9 @@ extensions += ["sphinxawesome_theme.highlighting"]
 
 html_title = "syfop"
 
+html_logo = "_static/logo.svg"
+html_favicon = "_static/logo.png"
+
 # TODO somehow the headerlinks look ugly, it looks better on the webpage and  on sphinx-themes.org
 html_theme_options = {
     "show_breadcrumbs": True,
