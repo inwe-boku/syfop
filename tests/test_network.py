@@ -497,3 +497,24 @@ def test_empty_network():
     """Empty network should raise an error."""
     with pytest.raises(ValueError, match="empty network not allowed"):
         Network([])
+
+
+def test_node_with_same_name():
+    """Nodes with the same name should raise an error."""
+    wind = NodeScalableInput(
+        name="wind",
+        input_profile=const_time_series(0.5),
+        costs=1,
+        output_unit="MW",
+    )
+    demand = NodeFixOutput(
+        name="wind",  # here is a simulated bug! should be "demand"
+        inputs=[wind],
+        input_commodities="electricity",
+        output_flow=const_time_series(5.0),
+        costs=0,
+        output_unit="MW",
+    )
+
+    with pytest.raises(ValueError, match="node names are not unique: wind, wind"):
+        Network([wind, demand])

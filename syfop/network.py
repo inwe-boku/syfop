@@ -75,6 +75,11 @@ class Network:
                 f"Network(): {', '.join(node.name for node in (all_input_nodes - set(nodes)))}"
             )
 
+        # check if names of nodes are unique
+        node_names = [node.name for node in nodes]
+        if len(set(node_names)) != len(nodes):
+            raise ValueError(f"node names are not unique: {', '.join(node_names)}")
+
         # minor code duplication with util.const_time_series(), but should not matter too much
         if isinstance(time_coords, int):
             time_coords = pd.date_range(str(time_coords_year), freq="h", periods=time_coords)
