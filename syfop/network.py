@@ -63,6 +63,12 @@ class Network:
         time_coords_year : int
             used only if time_coords is an int
         solver_dir : str
+            Path where temporary files for the lp file, see
+            [``linopy.model.Model``](https://linopy.readthedocs.io/en/latest/generated/linopy.model.Model.html#linopy.model.Model.__init__).
+            This is used as workaround on the VSC [VSC](https://vsc.ac.at), because the defaut temp
+            folder is on a partition with very limited space and deleting the files after the
+            optimization does not work (always?).
+
 
         """
         if len(nodes) == 0:
@@ -125,6 +131,7 @@ class Network:
                         )
 
     def _create_graph(self, nodes):
+        """Create a nx.DiGraph object to plot the network."""
         graph = nx.DiGraph()
         for node in nodes:
             if isinstance(node, NodeInputBase):
@@ -166,6 +173,7 @@ class Network:
                 )
 
     def _generate_optimization_model(self, nodes, solver_dir):
+        """Create the linopy optimization model for the network."""
         model = linopy.Model(solver_dir=solver_dir)
 
         for node in nodes:

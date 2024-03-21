@@ -20,6 +20,10 @@ def const_time_series(value, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_yea
         Year used for generating hourly time stamps. This is ignored if ``time_coords`` is not of
         type int.
 
+    Returns
+    -------
+    xr.DataArray
+
     """
     if isinstance(time_coords, int):
         time_coords = pd.date_range(str(time_coords_year), freq="h", periods=time_coords)
@@ -32,6 +36,22 @@ def const_time_series(value, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_yea
 
 
 def timeseries_variable(model, time_coords, name):
+    """Create a non-negative variable for a ``linopy.Model`` with time coordinates.
+
+    Parameters
+    ----------
+    model : linopy.Model
+        The model to which the variable should be added.
+    time_coords : int or array-like
+        see `const_time_series()`
+    name : str
+        Name of the variable.
+
+    Returns
+    -------
+    linopy.Variable
+        The created variable.
+    """
     return model.add_variables(
         name=name,
         lower=const_time_series(0.0, time_coords),
@@ -39,6 +59,18 @@ def timeseries_variable(model, time_coords, name):
 
 
 def random_time_series(time_coords=DEFAULT_NUM_TIME_STEPS):
+    """Create a random time series.
+
+    Parameters
+    ----------
+    time_coords : int or array-like
+        see `const_time_series()`
+
+    Returns
+    -------
+    xr.DataArray
+        A random time series between 0 and 1 with given time coordinates.
+    """
     np.random.seed(42)
     if isinstance(time_coords, int):
         len_time_coords = time_coords
@@ -51,6 +83,11 @@ def print_constraints(m):
     """Print equations of model `m` in a more or less readable form.
 
     Use with caution: see comment in `constraints_to_str()`.
+
+    Parameters
+    ----------
+    m : linopy.Model
+        The model to be printed.
 
     """
     print(constraints_to_str(m))
@@ -68,6 +105,16 @@ def constraints_to_str(m):
 
     Use with caution: this function uses inter data structures of linopy and therefore might break
     with new versions of linopy.
+
+    Parameters
+    ----------
+    m : linopy.Model
+        The model to be printed.
+
+    Returns
+    -------
+    str
+        A string with the constraints.
 
     """
     if not len(m.constraints):
