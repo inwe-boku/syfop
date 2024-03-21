@@ -65,6 +65,9 @@ class Network:
         solver_dir : str
 
         """
+        if len(nodes) == 0:
+            raise ValueError("empty network not allowed, provide a non empty list of nodes!")
+
         all_input_nodes = {input_node for node in nodes for input_node in node.inputs}
         if not (all_input_nodes <= set(nodes)):
             raise ValueError(

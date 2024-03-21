@@ -491,3 +491,9 @@ def test_network_add_variables():
 
     # we need 5 MW constant demand
     assert network.model.solution.total_energy == DEFAULT_NUM_TIME_STEPS * 5.0
+
+
+def test_empty_network():
+    """Empty network should raise an error."""
+    with pytest.raises(ValueError, match="empty network not allowed"):
+        Network([])
