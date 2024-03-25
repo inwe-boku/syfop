@@ -52,6 +52,15 @@ napoleon_numpy_docstring = True
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
+# Theme choice:
+#  - awesome is the most beautiful, but has some scrolling issues
+#  - furo is the cleanest, but I don't like the colors that much
+#  - sphinx_book_theme is used by pypsa
+#
+# html_theme = "sphinx_book_theme"
+# html_theme = "furo"
+
+
 html_theme = "sphinxawesome_theme"
 extensions += ["sphinxawesome_theme.highlighting"]
 
