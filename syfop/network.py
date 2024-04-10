@@ -18,8 +18,9 @@ class SolverError(Exception):
 
 class Network:
     """A network is a directed acyclic graph of nodes, which represents the flow of commodities
-    between nodes. Nodes are represented by objects of classes defined in ``syfop.node``. The
-    connections between nodes are defined by the parameter ``inputs`` when creating node objects.
+    between nodes. Nodes are represented by objects of classes defined in :py:mod:`syfop.node`.
+    The connections between nodes are defined by the parameter ``inputs`` when creating node
+    objects.
 
     The network is used to optimize the sizes of the nodes, such that the total costs are
     minimized.
@@ -38,7 +39,7 @@ class Network:
         dictionary of nodes with node names as keys
     graph : networkx.DiGraph
         used for drawing the network
-    model : linopy.Model
+    model : linopy.model.Model
         optimization model for the network
 
     """
@@ -63,12 +64,10 @@ class Network:
         time_coords_year : int
             used only if time_coords is an int
         solver_dir : str
-            Path where temporary files for the lp file, see
-            [``linopy.model.Model``](https://linopy.readthedocs.io/en/latest/generated/linopy.model.Model.html#linopy.model.Model.__init__).
-            This is used as workaround on the VSC [VSC](https://vsc.ac.at), because the defaut temp
+            Path where temporary files for the lp file, see :py:class:`linopy.model.Model`.
+            This is used as workaround on the `VSC <https://vsc.ac.at>`__, because the default temp
             folder is on a partition with very limited space and deleting the files after the
             optimization does not work (always?).
-
 
         """
         if len(nodes) == 0:
@@ -228,21 +227,21 @@ class Network:
 
     def add_variables(self, *args, **kwargs):
         """Add custom variables to the linopy optimization model. See
-        ``linopy.Model.add_variables()`` for a documentation of the parameters.
+        :py:meth:`linopy.model.Model.add_variables()` for a documentation of the parameters.
 
-        This method must be called before ``Network.optimize()`` is called.
+        This method must be called before :py:class:`Network.optimize()` is called.
 
         """
         return self.model.add_variables(*args, **kwargs)
 
     def add_constraints(self, *args, **kwargs):
         """Add custom constraints to the linopy optimization model. See
-        ``linopy.Model.add_constraints()`` for a documentation of the parameters.
+        :py:meth:`linopy.model.Model.add_constraints()` for a documentation of the parameters.
 
         To create the constraint, variables can be accessed via ``Network.model.variables`` or by
-        node attributes, e.g. in `Network.nodes_dict['wind'].size` for a node with name "wind".
+        node attributes, e.g. in ``Network.nodes_dict['wind'].size`` for a node with name *wind*.
 
-        This method must be called before ``Network.optimize()`` is called.
+        This method must be called before :py:meth:`Network.optimize()`` is called.
 
         """
         return self.model.add_constraints(*args, **kwargs)
@@ -276,7 +275,7 @@ class Network:
             <https://linopy.readthedocs.io/en/latest/prerequisites.html#install-a-solver>`__, by
             default "highs"
         **kwargs
-            additional parameters passed to the solver via ``linopy.Model.solve()``.
+            additional parameters passed to the solver via :py:meth:`linopy.model.Model.solve()`.
 
         """
         # TODO infeasible should raise?

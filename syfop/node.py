@@ -44,7 +44,7 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
 
     Attributes
     ----------
-    size: linopy.Variable
+    size: linopy.variables.Variable
         The size of the node.
 
 
@@ -80,7 +80,7 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
             Proportions of the output flows. The keys are the names of the output flows and the
             values are the proportions. The proportions must sum up to 1. If not given, all output
             commodities must be equal.
-        storage : Storage, optional
+        storage : Storage
             Storage attached to the node.
 
         """
@@ -126,7 +126,7 @@ class Node(NodeScalableBase):
 
     Attributes
     ----------
-    size: linopy.Variable
+    size: linopy.variables.Variable
         The size of the node.
 
     Examples
@@ -245,13 +245,13 @@ class Storage:
 
     Attributes
     ----------
-    size : linopy.Variable
+    size : linopy.variables.Variable
         The size of the storage.
-    level : linopy.Variable
+    level : linopy.variables.Variable
         The level of the storage for each time stamp, i.e. the amount of the stored commodity.
-    charge : linopy.Variable
+    charge : linopy.variables.Variable
         The amount of the commodity that is charged into the storage for each time stamp.
-    discharge : linopy.Variable
+    discharge : linopy.variables.Variable
         The amount of the commodity that is discharged from the storage for each time stamp. A
         positive value for ``charge`` and ``discharge`` in the same time stamp does not make sense,
         but it is not forbidden in any way. However, such a case will not be optimal if

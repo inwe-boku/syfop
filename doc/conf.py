@@ -24,6 +24,7 @@ extensions = [
     "sphinx.ext.autodoc",  # support for automatic documentation of docstrings
     "sphinx.ext.napoleon",  # support for numpy and google docstrings
     "sphinx.ext.viewcode",  # show source code in documentation
+    "sphinx.ext.intersphinx",  # link to other projects
 ]
 
 templates_path = ["_templates"]
@@ -47,6 +48,10 @@ napoleon_numpy_docstring = True
 # napoleon_use_param = False
 # napoleon_use_rtype = False
 # napoleon_preprocess_types = True
+
+intersphinx_mapping = {
+    "linopy": ("https://linopy.readthedocs.io/en/latest/", None),
+}
 
 
 # -- Options for HTML output -------------------------------------------------
