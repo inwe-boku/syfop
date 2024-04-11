@@ -89,11 +89,22 @@ class Network:
         self.time_coords = time_coords
 
         self._check_consistent_time_coords(nodes, time_coords)
+        self._check_all_nodes_connected(nodes)
 
         self.nodes = nodes
         self.nodes_dict = {node.name: node for node in nodes}
 
         self.model = self._generate_optimization_model(nodes, solver_dir)
+
+    def _check_all_nodes_connected(self, nodes):
+        """Check if graph of node forms a connected network."""
+        graph = self._create_graph(nodes)
+        components = list(nx.weakly_connected_components(graph))
+        if len(components) > 1:
+            raise ValueError(
+                "network is not connected, there are multiple components: "
+                f"{', '.join(str(component) for component in components)}"
+            )
 
     def _check_consistent_time_coords(self, nodes, time_coords):
         # all time series need to be defined on the same coordinates otherwise vector comparison

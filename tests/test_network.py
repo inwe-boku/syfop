@@ -499,6 +499,31 @@ def test_empty_network():
         Network([])
 
 
+def test_unconnected_nodes():
+    """Nodes that are not connected should raise an error."""
+    wind = NodeScalableInput(
+        name="wind",
+        input_profile=const_time_series(0.5),
+        costs=1,
+        output_unit="MW",
+    )
+    demand = NodeFixOutput(
+        name="demand",
+        inputs=[],
+        input_commodities="electricity",
+        output_flow=const_time_series(5.0),
+        costs=0,
+        output_unit="MW",
+    )
+
+    # is the order of components deterministic here? would need to know how networkx checks it, but
+    # I guess it should be fine... if the test fails because it sais "demand", "wind" instead of
+    # "wind", "demand", then just remove the rest of the error_msg stating the nodes
+    error_msg = "network is not connected, there are multiple components: {'wind'}, {'demand'}"
+    with pytest.raises(ValueError, match=error_msg):
+        Network([wind, demand])
+
+
 def test_node_with_same_name():
     """Nodes with the same name should raise an error."""
     wind = NodeScalableInput(
