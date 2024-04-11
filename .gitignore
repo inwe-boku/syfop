@@ -6,6 +6,11 @@ __pycache__/
 *.py[cod]
 *.pyc
 
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
