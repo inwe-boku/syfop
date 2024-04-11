@@ -37,8 +37,6 @@ class Network:
         time coordinates for the optimization problem
     nodes_dict : dict
         dictionary of nodes with node names as keys
-    graph : networkx.DiGraph
-        used for drawing the network
     model : linopy.model.Model
         optimization model for the network
 
@@ -94,7 +92,6 @@ class Network:
 
         self.nodes = nodes
         self.nodes_dict = {node.name: node for node in nodes}
-        self.graph = self._create_graph(nodes)
 
         self.model = self._generate_optimization_model(nodes, solver_dir)
 
@@ -129,7 +126,8 @@ class Network:
                             "with time_coords different from the Network's time_coords"
                         )
 
-    def _create_graph(self, nodes):
+    @staticmethod
+    def _create_graph(nodes):
         """Create a nx.DiGraph object to plot the network."""
         graph = nx.DiGraph()
         for node in nodes:
@@ -336,15 +334,15 @@ class Network:
             choice of plotting library used to draw the graph, one of: netgraph, graphviz
 
         """
+        graph = self._create_graph(self.nodes)
+
         # this requires python >=3.7, otherwise order of values() is not guaranteed
-        node_color = {
-            node: node_attrs["color"] for node, node_attrs in self.graph.nodes(data=True)
-        }
+        node_color = {node: node_attrs["color"] for node, node_attrs in graph.nodes(data=True)}
 
         if mode == "graphviz":
             nx.draw(
-                self.graph,
-                pos=graphviz_layout(self.graph, prog="dot"),
+                graph,
+                pos=graphviz_layout(graph, prog="dot"),
                 node_color=node_color.values(),
                 # node_size=5000,
                 with_labels=True,
@@ -361,7 +359,7 @@ class Network:
             #   display commodities / units?
             # TODO allow custom args to be passed to netgraph?
             netgraph.Graph(
-                self.graph,
+                graph,
                 node_labels=True,
                 node_layout="dot",
                 node_label_offset=0.09,
