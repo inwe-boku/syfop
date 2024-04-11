@@ -126,30 +126,6 @@ class Network:
                             "with time_coords different from the Network's time_coords"
                         )
 
-    @staticmethod
-    def _create_graph(nodes):
-        """Create a nx.DiGraph object to plot the network."""
-        graph = nx.DiGraph()
-        for node in nodes:
-            if isinstance(node, NodeInputBase):
-                color = "#c72321"
-            elif isinstance(node, NodeOutputBase):
-                color = "#f0c220"
-            else:
-                color = "#000000"
-
-            graph.add_node(node.name, color=color)
-
-            if hasattr(node, "storage") and node.storage is not None:
-                # XXX hopefully this name is unique
-                graph.add_node(f"{node.name}_storage", color="#0d8085")
-                graph.add_edge(f"{node.name}_storage", node.name)
-                graph.add_edge(node.name, f"{node.name}_storage")
-
-            for input_ in node.inputs:
-                graph.add_edge(input_.name, node.name)
-        return graph
-
     def _add_leaf_flow_variables(self, model, nodes):
         # Add a variable for nodes, which do not have input flows or output flows. This variable
         # should be simply the sum of output flows (for the input flow variable) or sum of input
@@ -324,6 +300,30 @@ class Network:
         costs = costs + storage_costs
 
         return costs
+
+    @staticmethod
+    def _create_graph(nodes):
+        """Create a nx.DiGraph object to plot the network."""
+        graph = nx.DiGraph()
+        for node in nodes:
+            if isinstance(node, NodeInputBase):
+                color = "#c72321"
+            elif isinstance(node, NodeOutputBase):
+                color = "#f0c220"
+            else:
+                color = "#000000"
+
+            graph.add_node(node.name, color=color)
+
+            if hasattr(node, "storage") and node.storage is not None:
+                # XXX hopefully this name is unique
+                graph.add_node(f"{node.name}_storage", color="#0d8085")
+                graph.add_edge(f"{node.name}_storage", node.name)
+                graph.add_edge(node.name, f"{node.name}_storage")
+
+            for input_ in node.inputs:
+                graph.add_edge(input_.name, node.name)
+        return graph
 
     def draw(self, mode="netgraph"):
         """Draw a graphic representation of the network of all nodes and edges.
