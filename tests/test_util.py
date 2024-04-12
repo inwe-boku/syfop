@@ -10,16 +10,16 @@ from syfop.util import (
 
 
 def test_const_time_series():
-    time_series = const_time_series(value=23, time_coords=42, time_coords_year=2020)
+    time_series = const_time_series(value=23, time_coords_num=42, time_coords_year=2020)
     assert time_series.sizes["time"] == 42
     assert (time_series == 23).all()
     assert (time_series.time[0].dt.year == 2020).all()
     assert (time_series.time[1] - time_series.time[0]) == np.timedelta64(1, "h")
 
 
-@pytest.mark.parametrize("time_coords", [42, range(42)])
-def test_random_time_series(time_coords):
-    time_series = random_time_series(time_coords)
+@pytest.mark.parametrize("params", [{}, {"time_coords_freq": "h"}])
+def test_random_time_series(params):
+    time_series = random_time_series(time_coords_num=42, **params)
     assert time_series.sizes["time"] == 42
     assert ((0 <= time_series) & (time_series < 1)).all()
 
@@ -28,7 +28,7 @@ def test_random_time_series(time_coords):
 def some_model():
     from tests.test_network import simple_demand_network
 
-    return simple_demand_network(time_coords=3).model
+    return simple_demand_network(time_coords_num=3).model
 
 
 def test_print_constraints(some_model):

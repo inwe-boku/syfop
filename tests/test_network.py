@@ -215,7 +215,7 @@ def test_no_input_node(input_flow_costs):
         # 42 EUR/MWh * 10h * 5 MWh/h
         expected_input_flow_costs = 42 * 10 * 5
 
-    time_coords = 10
+    time_coords_num = 10
     gas = Node(
         name="gas", inputs=[], input_commodities="gas", costs=1, output_unit="MW", **extra_kwrgs
     )
@@ -223,11 +223,11 @@ def test_no_input_node(input_flow_costs):
         name="demand",
         inputs=[gas],
         input_commodities="electricity",
-        output_flow=const_time_series(5.0, time_coords=time_coords),
+        output_flow=const_time_series(5.0, time_coords_num=time_coords_num),
         costs=0,
         output_unit="MW",
     )
-    network = Network([gas, demand], time_coords=time_coords)
+    network = Network([gas, demand], time_coords_num=time_coords_num)
     network.optimize(default_solver)
 
     np.testing.assert_array_almost_equal(network.model.solution.input_flow_gas, 5.0)
@@ -238,10 +238,10 @@ def test_no_input_node(input_flow_costs):
 
 
 def test_no_output_node():
-    time_coords = 10
+    time_coords_num = 10
     wind = NodeFixInput(
         name="wind",
-        input_flow=const_time_series(5, time_coords=time_coords),
+        input_flow=const_time_series(5, time_coords_num=time_coords_num),
         costs=0,  # FIXME NodeFixInput is not usable if we don't set the size to 0
         output_unit="t",
     )
@@ -252,17 +252,17 @@ def test_no_output_node():
         costs=3,
         output_unit="t",
     )
-    network = Network([wind, hydrogen], time_coords=time_coords)
+    network = Network([wind, hydrogen], time_coords_num=time_coords_num)
     network.optimize(default_solver)
     np.testing.assert_array_almost_equal(network.model.solution.output_flow_hydrogen, 5.0)
     np.testing.assert_array_almost_equal(network.model.solution.flow_wind_hydrogen, 5.0)
     assert network.model.solution.size_hydrogen == 5.0
 
 
-def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.5):
+def simple_demand_network(time_coords_num=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.5):
     wind = NodeScalableInput(
         name="wind",
-        input_profile=const_time_series(wind_input_flow, time_coords=time_coords),
+        input_profile=const_time_series(wind_input_flow, time_coords_num=time_coords_num),
         costs=1,
         output_unit="MW",
     )
@@ -270,12 +270,12 @@ def simple_demand_network(time_coords=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.
         name="demand",
         inputs=[wind],
         input_commodities="electricity",
-        output_flow=const_time_series(5.0, time_coords=time_coords),
+        output_flow=const_time_series(5.0, time_coords_num=time_coords_num),
         costs=0,
         output_unit="MW",
     )
 
-    network = Network([wind, demand], time_coords=time_coords)
+    network = Network([wind, demand], time_coords_num=time_coords_num)
     return network
 
 
@@ -294,7 +294,7 @@ def test_inconsistent_time_coords(input_output, wrong_length):
     This might change in future."""
     time_coords_params = {"input": {}, "output": {}}
     if wrong_length:
-        time_coords_params[input_output] = {"time_coords": 42}
+        time_coords_params[input_output] = {"time_coords_num": 42}
         error_msg_pattern = f"has an .*{input_output}.* with length"
     else:
         time_coords_params[input_output] = {"time_coords_year": 2019}
@@ -330,11 +330,11 @@ def test_inconsistent_time_coords(input_output, wrong_length):
 def test_hot_chocolate(with_curtailment):
     """A quite synthetic example, to test whether parameters and units are intuitive. A cow
     produces milk which is mixed cacao powder to produce hot chocolate."""
-    time_coords = 3
+    time_coords_num = 3
 
     # we will need 2l of cow capacity, because we have a constant capacity factor of 120ml per
     # liter of cow capacity
-    milk_flow = const_time_series(120e-3, time_coords=time_coords)
+    milk_flow = const_time_series(120e-3, time_coords_num=time_coords_num)
 
     if with_curtailment:
         # let's assume we have too much milk in the first time stamp, there is no storage and we
@@ -342,7 +342,7 @@ def test_hot_chocolate(with_curtailment):
         milk_flow[0] = 1.0
 
     # we will need size = 8 to get 8g per time stamp
-    cacao_delivery_flow = const_time_series(1.0, time_coords=time_coords)
+    cacao_delivery_flow = const_time_series(1.0, time_coords_num=time_coords_num)
 
     cow = NodeScalableInput(
         name="cow",
@@ -378,7 +378,7 @@ def test_hot_chocolate(with_curtailment):
         name="hot_chocolate_consumer",
         inputs=[hot_chocolate],
         input_commodities="hot_chocolate",
-        output_flow=const_time_series(240e-3 + 8 * 1.67e-3, time_coords=time_coords),
+        output_flow=const_time_series(240e-3 + 8 * 1.67e-3, time_coords_num=time_coords_num),
         costs=0,
         output_unit="l",
     )
@@ -396,7 +396,7 @@ def test_hot_chocolate(with_curtailment):
 
         nodes.append(milk_curtailment)
 
-    network = Network(nodes, time_coords=time_coords)
+    network = Network(nodes, time_coords_num=time_coords_num)
 
     network.optimize(default_solver)
 

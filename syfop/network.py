@@ -45,7 +45,9 @@ class Network:
     def __init__(
         self,
         nodes,
-        time_coords=DEFAULT_NUM_TIME_STEPS,
+        time_coords=None,
+        time_coords_freq="h",
+        time_coords_num=DEFAULT_NUM_TIME_STEPS,
         time_coords_year=2020,
         solver_dir=None,
     ):
@@ -56,16 +58,22 @@ class Network:
         nodes : list of subclasses of syfop.node.NodeBase
             List of nodes to be included in the network. All nodes used as input nodes need to be
             included in this list otherwise a ValueError is raised.
-        time_coords : int or pandas.DatetimeIndex
+        time_coords : pandas.DatetimeIndex
             time coordinates used for all time series in the network, typically hourly time steps
-            for a year
+            for a year. If None, time_coords are generated using ``time_coords_freq``,
+            ``time_coords_num`` and ``time_coords_year``.
+        time_coords_freq : str
+            used only if ``time_coords`` is ``None``, frequency of the time coordinates
+        time_coords_num : int
+            used only if ``time_coords`` is ``None``, number of time stamps generated
         time_coords_year : int
-            used only if time_coords is an int
+            used only if ``time_coords`` is ``None``, year used for generating time stamps (first
+            hour of this year will be used for the first time stamp)
         solver_dir : str
-            Path where temporary files for the lp file, see :py:class:`linopy.model.Model`.
-            This is used as workaround on the `VSC <https://vsc.ac.at>`__, because the default temp
-            folder is on a partition with very limited space and deleting the files after the
-            optimization does not work (always?).
+            Path where temporary files for the lp file, see :py:class:`linopy.model.Model`. This is
+            used as workaround on the `VSC <https://vsc.ac.at>`__, because the default temp folder
+            is on a partition with very limited space and deleting the files after the optimization
+            does not work (always?).
 
         """
         if len(nodes) == 0:
@@ -84,8 +92,12 @@ class Network:
             raise ValueError(f"node names are not unique: {', '.join(node_names)}")
 
         # minor code duplication with util.const_time_series(), but should not matter too much
-        if isinstance(time_coords, int):
-            time_coords = pd.date_range(str(time_coords_year), freq="h", periods=time_coords)
+        if time_coords is None:
+            time_coords = pd.date_range(
+                str(time_coords_year),
+                freq=time_coords_freq,
+                periods=time_coords_num,
+            )
         self.time_coords = time_coords
 
         self._check_consistent_time_coords(nodes, time_coords)

@@ -5,28 +5,43 @@ import xarray as xr
 DEFAULT_NUM_TIME_STEPS = 8760
 
 
-def const_time_series(value, time_coords=DEFAULT_NUM_TIME_STEPS, time_coords_year=2020):
-    """Creates a constant time series as DataArray.
+def const_time_series(
+    value,
+    time_coords=None,
+    time_coords_freq="h",
+    time_coords_num=DEFAULT_NUM_TIME_STEPS,
+    time_coords_year=2020,
+):
+    """Creates a constant time series as DataArray. The time coordinates will be created from
+    parameters if not given.
 
     Parameters
     ----------
 
     value : float
         constant value used for each time stamp
-    time_coords : int or array-like
-        Number of hourly time stamps generated or array used as time coordinates. Does not need to
-        be of a date time type, but probably makes sense.
+    time_coords : pandas.DatetimeIndex
+        time coordinates for the time series. If None, time_coords are generated using
+        ``time_coords_freq``, ``time_coords_num`` and ``time_coords_year``.
+    time_coords_freq : str
+        used only if ``time_coords`` is ``None``, frequency of the time coordinates
+    time_coords_num : int
+        used only if ``time_coords`` is ``None``, number of time stamps generated
     time_coords_year : int
-        Year used for generating hourly time stamps. This is ignored if ``time_coords`` is not of
-        type int.
+        used only if ``time_coords`` is ``None``, year used for generating time stamps (first hour
+        of this year will be used for the first time stamp)
 
     Returns
     -------
     xr.DataArray
 
     """
-    if isinstance(time_coords, int):
-        time_coords = pd.date_range(str(time_coords_year), freq="h", periods=time_coords)
+    if time_coords is None:
+        time_coords = pd.date_range(
+            str(time_coords_year),
+            freq=time_coords_freq,
+            periods=time_coords_num,
+        )
 
     return xr.DataArray(
         value * np.ones(len(time_coords)),
@@ -42,8 +57,8 @@ def timeseries_variable(model, time_coords, name):
     ----------
     model : linopy.Model
         The model to which the variable should be added.
-    time_coords : int or array-like
-        see `const_time_series()`
+    time_coords : pandas.DatetimeIndex
+        see ``const_time_series()``
     name : str
         Name of the variable.
 
@@ -58,25 +73,38 @@ def timeseries_variable(model, time_coords, name):
     )
 
 
-def random_time_series(time_coords=DEFAULT_NUM_TIME_STEPS):
+def random_time_series(
+    time_coords_freq="h",
+    time_coords_num=DEFAULT_NUM_TIME_STEPS,
+    time_coords_year=2020,
+):
     """Create a random time series.
 
     Parameters
     ----------
-    time_coords : int or array-like
-        see `const_time_series()`
+    time_coords_freq : str
+        used only if ``time_coords`` is ``None``, frequency of the time coordinates
+    time_coords_num : int
+        used only if ``time_coords`` is ``None``, number of time stamps generated
+    time_coords_year : int
+        used only if ``time_coords`` is ``None``, year used for generating time stamps (first hour
+        of this year will be used for the first time stamp)
 
     Returns
     -------
     xr.DataArray
         A random time series between 0 and 1 with given time coordinates.
     """
+    # let's make it deterministic, way better for debugging test cases!
     np.random.seed(42)
-    if isinstance(time_coords, int):
-        len_time_coords = time_coords
-    else:
-        len_time_coords = len(time_coords)
-    return const_time_series(np.random.rand(len_time_coords), time_coords)
+
+    # this is a bit of a hack, because value is documented as float, but a time series here
+    return const_time_series(
+        np.random.rand(time_coords_num),
+        time_coords_freq=time_coords_freq,
+        time_coords_num=time_coords_num,
+        time_coords_year=time_coords_year,
+    )
 
 
 def print_constraints(m):
