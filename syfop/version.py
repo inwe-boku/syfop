@@ -8,9 +8,9 @@ def get_version():
     version = git_tag.lstrip("v")
 
     # convert string from git-describe to a valid PEP440 version string
-    # v0.1.0-4-gc5f364c   -->   syfop-0.1.0.dev4+gitgc5f364c
+    # v0.1.0-4-gc5f364c   -->   syfop-0.1.0.dev4+gc5f364c
     # see: https://stackoverflow.com/a/35522080/859591
-    version = version.replace("-", ".dev", 1).replace("-", "+git", 1)
+    version = version.replace("-", ".dev", 1).replace("-", "+", 1)
 
     return version
 
