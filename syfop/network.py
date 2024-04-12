@@ -65,7 +65,8 @@ class Network:
         time_coords_freq : str
             used only if ``time_coords`` is ``None``, frequency of the time coordinates
         time_coords_num : int
-            used only if ``time_coords`` is ``None``, number of time stamps generated
+            used only if ``time_coords`` is ``None``, number of time stamps generated.
+            Note that the default value might be wrong in case of a leap year.
         time_coords_year : int
             used only if ``time_coords`` is ``None``, year used for generating time stamps (first
             hour of this year will be used for the first time stamp)
