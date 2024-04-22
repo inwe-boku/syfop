@@ -7,6 +7,7 @@ import pandas as pd
 from networkx.drawing.nx_agraph import graphviz_layout
 
 from syfop.node_base import NodeInputBase, NodeOutputBase
+from syfop.units import ureg
 from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
@@ -49,6 +50,7 @@ class Network:
         time_coords_freq="h",
         time_coords_num=DEFAULT_NUM_TIME_STEPS,
         time_coords_year=2020,
+        total_cost_unit=ureg.EUR,
         solver_dir=None,
     ):
         """Create a network of nodes.
@@ -70,6 +72,8 @@ class Network:
         time_coords_year : int
             used only if ``time_coords`` is ``None``, year used for generating time stamps (first
             hour of this year will be used for the first time stamp)
+        total_cost_unit : pint.Unit
+            unit of the objective function, needs to be a currency
         solver_dir : str
             Path where temporary files for the lp file, see :py:class:`linopy.model.Model`. This is
             used as workaround on the `VSC <https://vsc.ac.at>`__, because the default temp folder
@@ -100,6 +104,8 @@ class Network:
                 periods=time_coords_num,
             )
         self.time_coords = time_coords
+
+        self.total_cost_unit = total_cost_unit
 
         self._check_consistent_time_coords(nodes, time_coords)
         self._check_all_nodes_connected(nodes)
