@@ -222,7 +222,7 @@ def test_no_input_node(input_flow_costs):
     expected_input_flow_costs = 0
 
     if input_flow_costs:
-        extra_kwrgs["input_flow_costs"] = 42  # EUR/MWh
+        extra_kwrgs["input_flow_costs"] = 42 * ureg.EUR / ureg.MWh  # EUR/MWh
 
         # 42 EUR/MWh * 10h * 5 MWh/h
         expected_input_flow_costs = 42 * 10 * 5
@@ -251,7 +251,9 @@ def test_no_input_node(input_flow_costs):
     np.testing.assert_array_almost_equal(network.model.solution.flow_gas_demand, 5.0)
     assert network.model.solution.size_gas == 5.0
 
-    assert network.model.objective.value == 5.0 + expected_input_flow_costs
+    np.testing.assert_array_almost_equal(
+        network.model.objective.value, 5.0 + expected_input_flow_costs
+    )
 
 
 def test_no_output_node():

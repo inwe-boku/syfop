@@ -170,7 +170,7 @@ class Node(NodeScalableBase):
         input_proportions=None,
         output_proportions=None,
         storage=None,
-        input_flow_costs=0.0,
+        input_flow_costs=None,
     ):
         """
         Parameters
@@ -203,12 +203,12 @@ class Node(NodeScalableBase):
             commodities must be equal.
         storage : Storage
             Storage attached to the node.
-        input_flow_costs : float
-            Costs per unit of input flow. Use this to add fuel costs. At the moment this is not
-            available for oder node types: NodeFixInput would add constant input flow costs, which
-            does not change the optimation result and NodeScalableInput would add costs which are
+        input_flow_costs : pint.Quantity
+            Costs per unit of input flow. Use this to add fuel costs. This is not available for
+            oder node types: NodeFixInput would add constant input flow costs, which does not
+            change the optimation result and NodeScalableInput would add costs which are
             proportional to its size, which could be added to the ``costs`` parameter. At maximum
-            one input node is allowed if ``input_flow_costs>0``.
+            one input node is allowed if ``input_flow_costs`` is given.
 
         """
         super().__init__(name, storage, costs, output_unit, convert_factor)

@@ -322,6 +322,11 @@ class NodeBase:
         if self.output_proportions is not None:
             self._create_proportion_constraints(model, self.output_proportions, self.output_flows)
 
+    def storage_cost_magnitude(self, currency_unit):
+        assert hasattr(self, "storage") and self.storage is not None, "node has no storage"
+        storage_unit = default_units[self._get_size_commodity(self)]
+        return self.storage.costs.to(currency_unit / storage_unit).magnitude
+
 
 class NodeScalableBase(NodeBase):
     """A Base class for all node types, which have a size variable. Do not initialize directly, use

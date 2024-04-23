@@ -3,11 +3,12 @@ import time
 
 import linopy
 import networkx as nx
+import numpy as np
 import pandas as pd
 from networkx.drawing.nx_agraph import graphviz_layout
 
 from syfop.node_base import NodeInputBase, NodeOutputBase
-from syfop.units import ureg
+from syfop.units import default_units, ureg
 from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
@@ -349,7 +350,7 @@ class Network:
             if node.costs
         )
         storage_costs = sum(
-            node.storage.size * node.storage.costs
+            node.storage.size * node.storage_cost_magnitude(self.total_cost_unit)
             for node in self.nodes
             if hasattr(node, "storage") and node.storage is not None
         )
@@ -358,11 +359,29 @@ class Network:
 
         # add costs for input_flows (e.g. fuel costs) if defined
         for node in self.nodes:
-            if not hasattr(node, "input_flow_costs") or node.input_flow_costs == 0.0:
+            if not hasattr(node, "input_flow_costs") or not node.input_flow_costs:
                 continue
             input_flows = list(node.input_flows.values())
-            assert len(input_flows) == 1, "only one input flow is supported for now"
-            costs = costs + node.input_flow_costs * input_flows[0].sum()
+            assert len(input_flows) == 1, "only one input_flow is supported"
+
+            # this is just a check: atm we support only Node, so input_flows should be plain linopy
+            # variables without units, but in case of a NodeScalableInput or a NodeFixInput we
+            # would need to strip units here and use the magnitude.
+            assert isinstance(input_flows[0], linopy.Variable), "unexpected input_flow type"
+
+            # see also https://stackoverflow.com/a/78373992/859591
+            interval_lengths = np.diff(self.time_coords)
+            # this works only if equidistant... should have been checked before already.
+            assert (interval_lengths == interval_lengths[0]).all(), "timestes are not equidistant"
+            interval_length_h = interval_lengths[0] / np.timedelta64(1, "h")
+
+            input_flow_unit = default_units[node.input_commodities[0]]  # something like MW
+            input_flow_costs_mag = node.input_flow_costs.to(
+                self.total_cost_unit / (input_flow_unit * ureg.h)
+            ).magnitude
+
+            # something like: EUR/MWh * x h * MW
+            costs = costs + input_flow_costs_mag * interval_length_h * input_flows[0].sum()
 
         costs = costs + storage_costs
 
