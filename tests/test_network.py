@@ -3,6 +3,7 @@ import pytest
 
 from syfop.network import Network, SolverError
 from syfop.node import Node, NodeFixInput, NodeFixOutput, NodeScalableInput, Storage
+from syfop.units import ureg
 from syfop.util import DEFAULT_NUM_TIME_STEPS, const_time_series
 
 all_solvers = pytest.mark.parametrize("solver", ["gurobi", "highs", "cplex"])
@@ -15,10 +16,16 @@ def test_expensive_solar_pv(solver):
     profiles)."""
 
     wind = NodeScalableInput(
-        name="wind", input_profile=const_time_series(0.5), costs=1, output_unit="MW"
+        name="wind",
+        input_profile=const_time_series(0.5),
+        costs=1 * ureg.EUR / ureg.MW,
+        output_unit="MW",
     )
     solar_pv = NodeScalableInput(
-        name="solar_pv", input_profile=const_time_series(0.5), costs=20.0, output_unit="MW"
+        name="solar_pv",
+        input_profile=const_time_series(0.5),
+        costs=20.0 * ureg.EUR / ureg.MW,
+        output_unit="MW",
     )
 
     electricity = Node(
@@ -29,7 +36,12 @@ def test_expensive_solar_pv(solver):
         output_unit="MW",
     )
 
-    co2 = NodeFixInput(name="co2", input_flow=const_time_series(5), costs=0, output_unit="t")
+    co2 = NodeFixInput(
+        name="co2",
+        input_flow=const_time_series(5) * ureg.t,
+        costs=0,
+        output_unit="t",
+    )
 
     methanol_synthesis = Node(
         name="methanol_synthesis",
@@ -90,7 +102,7 @@ def test_simple_co2_storage(storage_type):
         co2_flow = 2 * co2_flow
         co2_flow[1::2] = 0
         co2_storage = Storage(
-            costs=1000,  # price not relevant, see comment above
+            costs=1000 * ureg.EUR / ureg.t,  # price not relevant, see comment above
             max_charging_speed=1.0,
             storage_loss=0.0,
             charging_loss=0.0,
@@ -217,13 +229,18 @@ def test_no_input_node(input_flow_costs):
 
     time_coords_num = 10
     gas = Node(
-        name="gas", inputs=[], input_commodities="gas", costs=1, output_unit="MW", **extra_kwrgs
+        name="gas",
+        inputs=[],
+        input_commodities="gas",
+        costs=1 * ureg.EUR / ureg.MW,
+        output_unit="MW",
+        **extra_kwrgs,
     )
     demand = NodeFixOutput(
         name="demand",
         inputs=[gas],
         input_commodities="electricity",
-        output_flow=const_time_series(5.0, time_coords_num=time_coords_num),
+        output_flow=const_time_series(5.0, time_coords_num=time_coords_num) * ureg.MW,
         costs=0,
         output_unit="MW",
     )
@@ -241,15 +258,17 @@ def test_no_output_node():
     time_coords_num = 10
     wind = NodeFixInput(
         name="wind",
-        input_flow=const_time_series(5, time_coords_num=time_coords_num),
+        input_flow=const_time_series(5, time_coords_num=time_coords_num) * ureg.MW,
         costs=0,  # FIXME NodeFixInput is not usable if we don't set the size to 0
         output_unit="t",
     )
     hydrogen = Node(
         name="hydrogen",
         inputs=[wind],
+        size_commodity="hydrogen",
         input_commodities="electricity",
-        costs=3,
+        costs=3 * ureg.EUR / ureg.t,
+        convert_factor=ureg.t / ureg.MW,
         output_unit="t",
     )
     network = Network([wind, hydrogen], time_coords_num=time_coords_num)
@@ -260,17 +279,19 @@ def test_no_output_node():
 
 
 def simple_demand_network(time_coords_num=DEFAULT_NUM_TIME_STEPS, wind_input_flow=0.5):
+    from syfop.units import ureg
+
     wind = NodeScalableInput(
         name="wind",
         input_profile=const_time_series(wind_input_flow, time_coords_num=time_coords_num),
-        costs=1,
+        costs=1 * ureg.EUR / ureg.MW,
         output_unit="MW",
     )
     demand = NodeFixOutput(
         name="demand",
         inputs=[wind],
         input_commodities="electricity",
-        output_flow=const_time_series(5.0, time_coords_num=time_coords_num),
+        output_flow=const_time_series(5.0, time_coords_num=time_coords_num) * ureg.MW,
         costs=0,
         output_unit="MW",
     )
@@ -454,14 +475,14 @@ def test_network_add_constraints():
     wind = NodeScalableInput(
         name="wind",
         input_profile=const_time_series(0.5),
-        costs=1,
+        costs=1 * ureg.EUR / ureg.MW,
         output_unit="MW",
     )
     demand = NodeFixOutput(
         name="demand",
         inputs=[wind],
         input_commodities="electricity",
-        output_flow=const_time_series(5.0),
+        output_flow=const_time_series(5.0) * ureg.MW,
         costs=0,
         output_unit="MW",
     )
@@ -469,6 +490,7 @@ def test_network_add_constraints():
         name="curtailment",
         inputs=[wind],
         input_commodities="electricity",
+        size_commodity="electricity",
         costs=0,
         output_unit="MW",
     )
@@ -522,6 +544,38 @@ def test_unconnected_nodes():
     error_msg = "network is not connected, there are multiple components: {'wind'}, {'demand'}"
     with pytest.raises(ValueError, match=error_msg):
         Network([wind, demand])
+
+
+def test_multiple_output_commodities_input_node():
+    """An input node (either NodeFixInput or NodeScalableInput) should have only one output
+    commodity."""
+    wind = NodeScalableInput(
+        name="wind",
+        input_profile=const_time_series(0.5),
+        costs=1,
+        output_unit="MW",
+    )
+    light_bulb = Node(
+        name="light_bulb",
+        inputs=[wind],
+        input_commodities=["electricity"],
+        costs=0,
+        output_unit="MW",
+    )
+    hair_dryer = Node(
+        name="computer",
+        inputs=[wind],
+        input_commodities=["air"],  # this is a mistake on purpose
+        costs=0,
+        output_unit="MW",
+    )
+
+    # the error could be also a different one: multiple output commodities do not make sense for
+    # input nodes, not only because they don't support output_propotions, also becaue there is no
+    # convert factor...
+    error_msg = "node wind has different output_commodities, but no output_proportions provided"
+    with pytest.raises(ValueError, match=error_msg):
+        _ = Network([wind, light_bulb, hair_dryer])
 
 
 def test_node_with_same_name():

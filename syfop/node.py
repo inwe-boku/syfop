@@ -72,7 +72,7 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
             Name of the node, must be unique in the network
         input_profile : xr.DataArray
             Time series of the input flow. Must be capacity factors, i.e. between 0 and 1.
-        costs : float
+        costs : pint.Quantity
             Costs per unit of size.
         output_unit : list of str or str
             Unit of the output commodity.
@@ -101,6 +101,14 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
         )
         self.input_flows = None
 
+    def _get_size_commodity(self):
+        # TODO refactor this into a property
+
+        # there can be only one output commodity because we don't have ouptut_properties here,
+        # this is tested elsewehere already
+        assert len(set(self.output_commodities)) == 1
+        return self.output_commodities[0]
+
     def create_variables(self, model, time_coords):
         super().create_variables(model, time_coords)
         self.input_flows = {"": self.size * self.input_profile}
@@ -127,7 +135,9 @@ class Node(NodeScalableBase):
     Attributes
     ----------
     size: linopy.variables.Variable
-        The size of the node.
+        The size of the node: sum of the output flows are less or equal to the size. If there are
+        multiple output commodities, only output flows for ``size_commodity`` are used for the sum
+        of output flows.
 
     Examples
     --------
@@ -156,6 +166,7 @@ class Node(NodeScalableBase):
         costs,
         output_unit,
         convert_factor=1.0,
+        size_commodity=None,
         input_proportions=None,
         output_proportions=None,
         storage=None,
@@ -172,12 +183,16 @@ class Node(NodeScalableBase):
         input_commodities : list of str
             List of input commodities. If all inputs have the same commodity, a single string can
             be given.
-        costs : float
-            Costs per size.
+        costs : pint.Quantity
+            Costs per size. See also ``size_commodity``.
         output_unit : str
             Unit of the output commodity.
-        convert_factor : float, optional
+        convert_factor : float or pint.Quantity
             Conversion factor for the output commodity. Default is 1.0.
+        size_commodity : str
+            Which commodity is used to define the size of the Node. This parameter is only
+            required, if there is more than one output commodity or if there are no output nodes
+            connected.
         input_proportions : dict
             Proportions of the input flows. The keys are the names of the input flows and the
             values are the proportions. The proportions must sum up to 1. If not given, all input
@@ -192,8 +207,8 @@ class Node(NodeScalableBase):
             Costs per unit of input flow. Use this to add fuel costs. At the moment this is not
             available for oder node types: NodeFixInput would add constant input flow costs, which
             does not change the optimation result and NodeScalableInput would add costs which are
-            proportional to its size, which could be added to the ``costs`` parameter.
-            At maximum one input node is allowed if ``input_flow_costs>0``.
+            proportional to its size, which could be added to the ``costs`` parameter. At maximum
+            one input node is allowed if ``input_flow_costs>0``.
 
         """
         super().__init__(name, storage, costs, output_unit, convert_factor)
@@ -213,18 +228,33 @@ class Node(NodeScalableBase):
         self._check_proportions_valid_or_missing(
             self.inputs, input_proportions, self.input_commodities, "input"
         )
+        self.size_commodity = size_commodity
         self.input_proportions = input_proportions
         self.output_proportions = output_proportions
 
         self.input_flow_costs = input_flow_costs
 
+    def _get_size_commodity(self):
+        # TODO refactor this into a property
+        if self.size_commodity is None:
+            if len(set(self.output_commodities)) > 1:
+                raise ValueError(
+                    "size_commodity not provided, but required for multiple "
+                    "different output commodities"
+                )
+            return self.output_commodities[0]
+        else:
+            return self.size_commodity
+
     def create_constraints(self, model):
         super().create_constraints(model)
 
-        # XXX why is this not needed in scalable classes?
-        # constraint: size of technology
+        # constraint: output_flows are limited by the size of technology in each timestamp
+        # Note: this is not needed for NodeScalableInput and NodeScalableOutput because there the
+        # input_profile and output_profile are checked to be between 0 and 1.
         if self.size is not None:
-            lhs = sum(self.output_flows.values()) - self.size
+            output_flows = self._get_output_flows(self._get_size_commodity())
+            lhs = sum(output_flows) - self.size
 
             if self.storage is not None:
                 lhs = lhs + self.storage.charge
@@ -265,8 +295,8 @@ class Storage:
         """
         Parameters
         ----------
-        costs : float
-            Storage costs per unit of size
+        costs : pint.Quantity
+            Storage costs per unit of size, e.g. ``1000 * ureg.EUR/ureg.kWh``.
         max_charging_speed : float
             Maximum charging speed, i.e. the share of the total size that can be charged per time
             stamp. For example, if the maximum charging speed is 0.5, two time stamps are needed to

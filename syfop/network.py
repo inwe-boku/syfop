@@ -175,13 +175,26 @@ class Network:
                     model, self.time_coords, f"output_flow_{node.name}"
                 )
 
-    def _generate_optimization_model(self, nodes, solver_dir):
-        """Create the linopy optimization model for the network."""
-        model = linopy.Model(solver_dir=solver_dir)
-
+    def _set_missing_input_commodities(self, nodes):
+        # set input commodities for input nodes, i.e. NodeScaleableInput and NodeFixedInput:
+        # Input nodes have only one input commodity, which is the same as the output commodity,
+        # therefore it does not need to be set explicitly by the user, but can be infered from the
+        # node(s) it is connected to.
+        # We need to disallow multiple output_commodities for input nodes anyhow, because there is
+        # no convert factor and no output_proportions.
         for node in nodes:
-            node.create_variables(model, self.time_coords)
+            if node.input_commodities is None:
+                assert (
+                    len(set(node.output_commodities)) == 1
+                ), f"unexpected number of output_commodities for node '{node.name}'"
 
+                # all other node types should have input_commmodities set at this point
+                assert isinstance(
+                    node, NodeInputBase
+                ), f" unexpected type for node '{node.name}': {type(node)}"
+                node.input_commodities = [node.output_commodities[0]]
+
+    def _set_output_connections(self, nodes):
         for node in nodes:
             node.outputs = []
         for node in nodes:
@@ -205,6 +218,15 @@ class Network:
                     if output.input_commodities is not None  # FIXME this line is stupid
                 ]
 
+                if len(node.output_commodities) == 0:
+                    if node.size_commodity is None:
+                        raise ValueError(
+                            f"node '{node.name}' has no output nodes defined, so "
+                            "size_commmodity must be set"
+                        )
+                    # here we have no ouputs of a Node, so there is only the leaf output flow
+                    node.output_commodities = [node.size_commodity]
+
                 # check whether output_proportions are valid and not missing if required
                 # note that the first part could be checked already in the constructor of the
                 # node classes which take output_proportions as parameter
@@ -218,7 +240,18 @@ class Network:
                     and node.storage is not None
                 ):
                     # we have one storage per node, so it is not clear what should be stored
-                    raise ValueError("storage not supported for multiple output commodities (yet)")
+                    raise ValueError("storage not supported for multiple output commodities")
+
+    def _generate_optimization_model(self, nodes, solver_dir):
+        """Create the linopy optimization model for the network."""
+        model = linopy.Model(solver_dir=solver_dir)
+
+        for node in nodes:
+            node.create_variables(model, self.time_coords)
+
+        self._set_output_connections(nodes)
+
+        self._set_missing_input_commodities(nodes)
 
         self._add_leaf_flow_variables(model, nodes)
 
@@ -310,7 +343,11 @@ class Network:
         ``Network.model.objective.value``.
 
         """
-        technology_costs = sum(node.size * node.costs for node in self.nodes if node.costs)
+        technology_costs = sum(
+            node.size * node.costs_magnitude(self.total_cost_unit)
+            for node in self.nodes
+            if node.costs
+        )
         storage_costs = sum(
             node.storage.size * node.storage.costs
             for node in self.nodes
