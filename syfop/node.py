@@ -256,6 +256,7 @@ class Node(NodeScalableBase):
             output_flows = self._get_output_flows(self._get_size_commodity())
             lhs = sum(output_flows) - self.size
 
+            # FIXME this is probably probably missing for NodeScalableInput
             if self.storage is not None:
                 lhs = lhs + self.storage.charge
 

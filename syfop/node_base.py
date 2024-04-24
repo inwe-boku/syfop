@@ -38,8 +38,12 @@ class NodeBase:
             raise ValueError("inputs must be of type NodeBase or some subclass")
 
         if isinstance(input_commodities, str):
+            # some nodes don't have inputs, because nothing is connected to it, but we still need
+            # an input commodity (and an input flow)
             input_commodities = max(1, len(inputs)) * [input_commodities]
-        elif len(inputs) != len(input_commodities):
+        elif len(inputs) != len(input_commodities) and not (
+            len(inputs) == 0 and len(input_commodities) == 1
+        ):
             raise ValueError(
                 f"invalid number of input_commodities provided for node '{self.name}': "
                 f"{input_commodities}, does not match number of inputs: "
@@ -454,6 +458,7 @@ class NodeOutputBase(NodeBase):
         ), f"unexpected number of input_commodities for node '{self.name}'"
         self.output_commodities = [self.input_commodities[0]]
 
+        # FIXME why not "" as key instead of name?
         self.output_flows = {name: output_flow}
 
         self._check_proportions_valid_or_missing(
