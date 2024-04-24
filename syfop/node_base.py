@@ -202,7 +202,8 @@ class NodeBase:
 
             sum of input flows == convert_factor * sum of output flows
 
-        in each time step."""
+        in each time step. Input flows are here only for the input commodity for which the
+        convert_factor is defined in convert_factors"""
         # No input/output flows: should never happen because we create extra variables for such
         # nodes in Network(). Hence, this is just a paranoia check to avoid an empty sum to
         # evaluate to 0 which would cause an infeasible network. (We define "no input nodes" as
