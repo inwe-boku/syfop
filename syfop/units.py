@@ -7,11 +7,15 @@ ureg = pint.UnitRegistry()
 ureg.define("EUR = [currency]")
 
 # per commodity
+# FIXME either we need t/h or MWh here!! weird that tests pass?! probably because we test
+# input_flow_costs only with electrictiy until now, but as soon as we add the storage for units
+# we will have a problem...
 default_units = {
     "electricity": ureg.MW,
     "co2": ureg.t,
     "hydrogen": ureg.t,
     "gas": ureg.MW,
+    "methanol": ureg.t,
     # TODO heat? coal?
 }
 

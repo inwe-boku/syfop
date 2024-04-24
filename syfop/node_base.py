@@ -179,7 +179,8 @@ class NodeBase:
         if self.convert_factors is None:
             if len(set(self.input_commodities)) > 1 or len(set(self.output_commodities)) > 1:
                 raise ValueError(
-                    "convert_factors is required for multiple input or output commodities"
+                    f"node '{self.name}': convert_factors is required for "
+                    "multiple input or output commodities"
                 )
             input_commodity = self.input_commodities[0]  # FIXME could this be None?
             output_commodity = self.output_commodities[
@@ -187,9 +188,10 @@ class NodeBase:
             ]  # FIXME could this be None at this point?
             convert_factors = {output_commodity: (input_commodity, self.convert_factor)}
         else:
-            if self.convert_factor != 1.0 or self.convert_factor is not None:
+            if self.convert_factor != 1.0 and self.convert_factor is not None:
                 raise ValueError(
-                    "convert_factors is only allowed if convert_factor is 1.0 or None"
+                    f"node '{self.name}': convert_factors is only allowed "
+                    "if convert_factor is 1.0 or None"
                 )
             convert_factors = self.convert_factors
 

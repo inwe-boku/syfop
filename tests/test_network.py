@@ -47,9 +47,13 @@ def test_expensive_solar_pv(solver):
         name="methanol_synthesis",
         inputs=[co2, electricity],
         input_commodities=["co2", "electricity"],
-        costs=8e-6,
-        convert_factor=1.0,  # this is not a realistic value probably
+        costs=8e-6 * ureg.EUR / ureg.t,
+        convert_factors={
+            # this is not a realistic value probably
+            "methanol": ("electricity", 1.0 * ureg.t / ureg.MW)
+        },
         output_unit="t",
+        size_commodity="methanol",
         input_proportions={"co2": 0.25, "electricity": 0.75},
     )
 

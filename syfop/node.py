@@ -166,6 +166,7 @@ class Node(NodeScalableBase):
         costs,
         output_unit,
         convert_factor=1.0,
+        convert_factors=None,
         size_commodity=None,
         input_proportions=None,
         output_proportions=None,
@@ -188,7 +189,11 @@ class Node(NodeScalableBase):
         output_unit : str
             Unit of the output commodity.
         convert_factor : float or pint.Quantity
-            Conversion factor for the output commodity. Default is 1.0.
+            Conversion factor for the output commodity. If this node has multiple different input
+            comodities, the parameter ``convert_factors`` needs to be used.
+        convert_factors : dict
+            a dictionary where each output commodity maps to a tuple of a input commodity to a
+            convert factor, example: ``{'hydrogen': ('electricity', 42 * ureg.t / ureg.MW}``
         size_commodity : str
             Which commodity is used to define the size of the Node. This parameter is only
             required, if there is more than one output commodity or if there are no output nodes
@@ -211,7 +216,7 @@ class Node(NodeScalableBase):
             one input node is allowed if ``input_flow_costs`` is given.
 
         """
-        super().__init__(name, storage, costs, output_unit, convert_factor)
+        super().__init__(name, storage, costs, output_unit, convert_factor, convert_factors)
 
         # TODO add check that inputs does not contain nodes of type NodeOutputBase?
         self.inputs = inputs
