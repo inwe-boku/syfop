@@ -347,7 +347,7 @@ class Network:
         technology_costs = sum(
             node.size * node.costs_magnitude(self.total_cost_unit)
             for node in self.nodes
-            if node.costs
+            if node.has_costs()
         )
         storage_costs = sum(
             node.storage.size * node.storage_cost_magnitude(self.total_cost_unit)

@@ -75,6 +75,9 @@ class NodeBase:
                 f"but no {input_or_output}_proportions provided"
             )
 
+    def has_costs(self):
+        return not (self.costs == 0.0 or self.costs is None)
+
     def _get_flows(self, direction, flows, attached_nodes, commodities, commodity):
         if len(attached_nodes) == 0:
             if commodities != [commodity]:
@@ -349,10 +352,7 @@ class NodeScalableBase(NodeBase):
     def create_variables(self, model, time_coords):
         super().create_variables(model, time_coords)
 
-        # TODO atm some nodes should not have variables, but setting costs to 0 does the
-        # job too
-        # FIXME is this correct to not have size when costs are 0?
-        if self.costs:  # None or 0 means that we don't need a size variable
+        if self.has_costs():
             self.size = model.add_variables(name=f"size_{self.name}", lower=0)
 
 
