@@ -77,9 +77,10 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
         output_unit : list of str or str
             Unit of the output commodity.
         output_proportions : dict
-            Proportions of the output flows. The keys are the names of the output flows and the
-            values are the proportions. The proportions must sum up to 1. If not given, all output
-            commodities must be equal.
+            Proportions of the output flows. The keys are the names of the output commodities and
+            the values are a quantity of the type of the output commodity, all multiples of these
+            values are allowed.
+            Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
         storage : Storage
             Storage attached to the node.
 
@@ -185,7 +186,8 @@ class Node(NodeScalableBase):
             List of input commodities. If all inputs have the same commodity, a single string can
             be given.
         costs : pint.Quantity
-            Costs per size. See also ``size_commodity``.
+            Costs per size. See also ``size_commodity``. Can be set to zero, e.g. for curtailing
+            nodes: in this case no size variable will be created.
         output_unit : str
             Unit of the output commodity.
         convert_factor : float or pint.Quantity
@@ -199,13 +201,14 @@ class Node(NodeScalableBase):
             required, if there is more than one output commodity or if there are no output nodes
             connected.
         input_proportions : dict
-            Proportions of the input flows. The keys are the names of the input flows and the
-            values are the proportions. The proportions must sum up to 1. If not given, all input
-            commodities must be equal.
+            Proportions of the input flows. The keys are the names of the input commodities and the
+            values are a quantity of the type of the input commodity, all multiples of these values
+            are allowed. Example: ``{"electricity": 0.3 * ureg.MW, "co2": 2.3 * ureg.t/ureg.h}``.
         output_proportions : dict
-            Proportions of the output flows. The keys are the names of the output flows and the
-            values are the proportions. The proportions must sum up to 1. If not given, all output
-            commodities must be equal.
+            Proportions of the output flows. The keys are the names of the output commodities and
+            the values are a quantity of the type of the output commodity, all multiples of these
+            values are allowed.
+            Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
         storage : Storage
             Storage attached to the node.
         input_flow_costs : pint.Quantity
@@ -226,13 +229,11 @@ class Node(NodeScalableBase):
 
         self.input_flows = None
 
-        # TODO some nodes do not need size/costs, e.g. curtailing etc, but setting costs=0 is doing
-        # the job, but it creates some unnecessary variables
         self.size = None
 
-        self._check_proportions_valid_or_missing(
-            self.inputs, input_proportions, self.input_commodities, "input"
-        )
+        # output_proportions are checked in Network.__init__, when we know the output commodities
+        self._check_proportions_valid(input_proportions, self.input_commodities, "input")
+
         self.size_commodity = size_commodity
         self.input_proportions = input_proportions
         self.output_proportions = output_proportions

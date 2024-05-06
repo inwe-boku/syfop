@@ -52,27 +52,13 @@ class NodeBase:
 
         return input_commodities
 
-    def _check_proportions_valid_or_missing(
-        self, nodes, proportions, commodities, input_or_output
-    ):
-        """Raise an error if invalid proportions are provided or if no proportions are provided,
-        but required due to different commodities."""
+    def _check_proportions_valid(self, proportions, commodities, input_or_output):
+        """Raise an error if invalid proportions are provided."""
         if proportions is not None:
-            # TODO maybe skip one input/output, because equality maybe be hard due
-            # to numerical errors, see comment below
-            assert proportions.keys() == {node.name for node in nodes}, (
+            assert proportions.keys() == set(commodities), (
                 f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to be"
-                f" a dict with keys matching names of {input_or_output}s"
-            )
-            # TODO is this check too strict due to numerical errors?
-            assert sum(proportions.values()) == 1.0, (
-                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to "
-                "sum up to 1."
-            )
-        elif len(set(commodities)) > 1:
-            raise ValueError(
-                f"node {self.name} has different {input_or_output}_commodities, "
-                f"but no {input_or_output}_proportions provided"
+                f" a dict with keys matching names of {input_or_output}_commodities: "
+                f"{set(commodities)}"
             )
 
     def has_costs(self):
@@ -129,15 +115,24 @@ class NodeBase:
             model, time_coords, f"storage_discharge_{self.name}"
         )
 
-    def _create_proportion_constraints(self, model, proportions, flows):
-        for name, proportion in proportions.items():
-            # this is more complicated than it has to be because we need to avoid using the
-            # same variable multiple times in a constraint
-            # https://github.com/PyPSA/linopy/issues/54
-            total_input = sum(flow for n, flow in flows.items() if n != name)
+    def _create_proportion_constraints(self, model, proportions, get_flows):
+        proportions = proportions.copy()
+        reference_commodity, reference_proportion = proportions.popitem()
+
+        flows_reference_mag = [
+            strip_unit(flow, reference_commodity) for flow in get_flows(reference_commodity)
+        ]
+
+        for commodity, proportion in proportions.items():
+            # XXX minor code duplication, search for strip_unit() in this file
+            flows_mag = [strip_unit(flow, commodity) for flow in get_flows(commodity)]
+
             model.add_constraints(
-                proportion * total_input + (proportion - 1) * flows[name] == 0.0,
-                name=f"proportion_{self.name}_{name}",
+                1
+                / strip_unit(reference_proportion, reference_commodity)
+                * sum(flows_reference_mag)
+                == 1 / strip_unit(proportion, commodity) * sum(flows_mag),
+                name=f"proportion_{self.name}_{commodity}",
             )
 
     def _create_storage_constraints(self, model):
@@ -326,11 +321,15 @@ class NodeBase:
 
         # constraint: proportion of inputs
         if self.input_proportions is not None:
-            self._create_proportion_constraints(model, self.input_proportions, self.input_flows)
+            self._create_proportion_constraints(
+                model, self.input_proportions, self._get_input_flows
+            )
 
         # constraint: proportion of outputs
         if self.output_proportions is not None:
-            self._create_proportion_constraints(model, self.output_proportions, self.output_flows)
+            self._create_proportion_constraints(
+                model, self.output_proportions, self._get_output_flows
+            )
 
     def storage_cost_magnitude(self, currency_unit):
         assert hasattr(self, "storage") and self.storage is not None, "node has no storage"
@@ -383,9 +382,10 @@ class NodeInputBase(NodeBase):
         output_unit : str
             Unit of the output commodity.
         output_proportions : dict
-            Proportions of the output flows. The keys are the names of the output flows and the
-            values are the proportions. The proportions must sum up to 1. If not given, all output
-            commodities must be equal.
+            Proportions of the output flows. The keys are the names of the output commodities and
+            the values are a quantity of the type of the output commodity, all multiples of these
+            values are allowed.
+            Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
         storage : Storage
             Storage attached to the node.
 
@@ -440,9 +440,9 @@ class NodeOutputBase(NodeBase):
         output_unit : str
             Unit of the output commodity.
         input_proportions : dict
-            Proportions of the input flows. The keys are the names of the input flows and the
-            values are the proportions. The proportions must sum up to 1. If not given, all input
-            commodities must be equal.
+            Proportions of the input flows. The keys are the names of the input commodities and the
+            values are a quantity of the type of the input commodity, all multiples of these values
+            are allowed. Example: ``{"electricity": 0.3 * ureg.MW, "co2": 2.3 * ureg.t/ureg.h}``.
         storage : Storage
             Storage attached to the node
 
@@ -464,9 +464,7 @@ class NodeOutputBase(NodeBase):
         # FIXME why not "" as key instead of name?
         self.output_flows = {name: output_flow}
 
-        self._check_proportions_valid_or_missing(
-            self.inputs, input_proportions, self.input_commodities, "input"
-        )
+        self._check_proportions_valid(input_proportions, self.input_commodities, "input")
         self.input_proportions = input_proportions
 
         if storage is not None:

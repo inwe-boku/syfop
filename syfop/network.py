@@ -228,11 +228,8 @@ class Network:
                     # here we have no ouputs of a Node, so there is only the leaf output flow
                     node.output_commodities = [node.size_commodity]
 
-                # check whether output_proportions are valid and not missing if required
-                # note that the first part could be checked already in the constructor of the
-                # node classes which take output_proportions as parameter
-                node._check_proportions_valid_or_missing(
-                    node.outputs, node.output_proportions, node.output_commodities, "output"
+                node._check_proportions_valid(
+                    node.output_proportions, node.output_commodities, "output"
                 )
 
                 if (

@@ -38,7 +38,7 @@ def test_expensive_solar_pv(solver):
 
     co2 = NodeFixInput(
         name="co2",
-        input_flow=const_time_series(5) * ureg.t,
+        input_flow=const_time_series(5) * ureg.t / ureg.h,
         costs=0,
         output_unit="t",
     )
@@ -47,20 +47,20 @@ def test_expensive_solar_pv(solver):
         name="methanol_synthesis",
         inputs=[co2, electricity],
         input_commodities=["co2", "electricity"],
-        costs=8e-6 * ureg.EUR / ureg.t,
+        costs=8e-6 * ureg.EUR / (ureg.t / ureg.h),
         convert_factors={
             # this is not a realistic value probably
-            "methanol": ("electricity", 1.0 * ureg.t / ureg.MW)
+            "methanol": ("electricity", 1.0 * ureg.t / ureg.h / ureg.MW)
         },
         output_unit="t",
         size_commodity="methanol",
-        input_proportions={"co2": 0.25, "electricity": 0.75},
+        input_proportions={"co2": 0.25 * ureg.t / ureg.h, "electricity": 0.75 * ureg.MW},
     )
 
     network = Network([wind, solar_pv, electricity, co2, methanol_synthesis])
     network.optimize(solver)
 
-    assert network.model.solution.size_wind == 30.0
+    np.testing.assert_array_almost_equal(network.model.solution.size_wind, 30.0)
     assert network.model.solution.size_solar_pv == 0.0
 
     co2 = network.model.solution.flow_co2_methanol_synthesis
@@ -106,7 +106,7 @@ def test_simple_co2_storage(storage_type):
         co2_flow = 2 * co2_flow
         co2_flow[1::2] = 0
         co2_storage = Storage(
-            costs=1000 * ureg.EUR / ureg.t,  # price not relevant, see comment above
+            costs=1000 * ureg.EUR / (ureg.t / ureg.h),  # price not relevant, see comment above
             max_charging_speed=1.0,
             storage_loss=0.0,
             charging_loss=0.0,
@@ -167,6 +167,7 @@ def test_simple_co2_storage(storage_type):
         input_commodities=["co2", "hydrogen"],
         costs=1.2,
         output_unit="t",
+        size_commodity="methanol",
         input_proportions={"co2": 0.25, "hydrogen": 0.75},
     )
 
@@ -273,8 +274,8 @@ def test_no_output_node():
         inputs=[wind],
         size_commodity="hydrogen",
         input_commodities="electricity",
-        costs=3 * ureg.EUR / ureg.t,
-        convert_factor=ureg.t / ureg.MW,
+        costs=3 * ureg.EUR / (ureg.t / ureg.h),
+        convert_factor=ureg.t / ureg.h / ureg.MW,
         output_unit="t",
     )
     network = Network([wind, hydrogen], time_coords_num=time_coords_num)
@@ -376,7 +377,7 @@ def test_hot_chocolate(with_curtailment):
         input_profile=milk_flow,
         # this is a weird workaround, because we know only the milk price, but costs here is
         # relative to the cow size not to the amount of milk
-        costs=1.49 * milk_flow[0],  # in EUR/l
+        costs=1.49 * float(milk_flow[0]) * ureg.EUR / (ureg.l / ureg.h),
         output_unit="l",
     )
 
@@ -385,7 +386,7 @@ def test_hot_chocolate(with_curtailment):
         name="cacao_delivery",
         input_profile=cacao_delivery_flow,
         # workaround, same as for cow costs
-        costs=3.2e-3 * cacao_delivery_flow[0],  # in EUR/g
+        costs=3.2e-3 * float(cacao_delivery_flow[0]) * ureg.EUR / (ureg.g / ureg.h),
         output_unit="g",
     )
 
@@ -394,8 +395,10 @@ def test_hot_chocolate(with_curtailment):
         inputs=[cow, cacao_delivery],
         input_commodities=["milk", "cacao"],
         # 240ml of milk, 8g of cacao
-        input_proportions={"cacao_delivery": 8 / (240e-3 + 8), "cow": 240e-3 / (240e-3 + 8)},
-        convert_factor=(240e-3 + 8 * 1.67e-3) / (240e-3 + 8),
+        input_proportions={"milk": 240 * ureg.ml / ureg.h, "cacao": 8 * ureg.g / ureg.h},
+        convert_factors={
+            "hot_chocolate": ("milk", 1.0),
+        },
         costs=0,
         output_unit="l",
     )
@@ -405,7 +408,12 @@ def test_hot_chocolate(with_curtailment):
         name="hot_chocolate_consumer",
         inputs=[hot_chocolate],
         input_commodities="hot_chocolate",
-        output_flow=const_time_series(240e-3 + 8 * 1.67e-3, time_coords_num=time_coords_num),
+        output_flow=const_time_series(
+            240e-3,
+            time_coords_num=time_coords_num,
+        )
+        * ureg.l
+        / ureg.h,
         costs=0,
         output_unit="l",
     )
@@ -419,6 +427,7 @@ def test_hot_chocolate(with_curtailment):
             input_commodities="milk",
             costs=0,
             output_unit="l",
+            size_commodity="milk",
         )
 
         nodes.append(milk_curtailment)
@@ -434,7 +443,7 @@ def test_hot_chocolate(with_curtailment):
     )
     np.testing.assert_array_almost_equal(network.model.solution.flow_cow_hot_chocolate, 240e-3)
     np.testing.assert_array_almost_equal(
-        network.model.solution.flow_hot_chocolate_hot_chocolate_consumer, 240e-3 + 8 * 1.67e-3
+        network.model.solution.flow_hot_chocolate_hot_chocolate_consumer, 240e-3
     )
 
     if with_curtailment:
@@ -567,6 +576,7 @@ def test_multiple_output_commodities_input_node():
         input_commodities=["electricity"],
         costs=0,
         output_unit="MW",
+        size_commodity="electricity",
     )
     hair_dryer = Node(
         name="computer",
@@ -574,13 +584,12 @@ def test_multiple_output_commodities_input_node():
         input_commodities=["air"],  # this is a mistake on purpose
         costs=0,
         output_unit="MW",
+        size_commodity="air",
     )
 
-    # the error could be also a different one: multiple output commodities do not make sense for
-    # input nodes, not only because they don't support output_propotions, also becaue there is no
-    # convert factor...
-    error_msg = "node wind has different output_commodities, but no output_proportions provided"
-    with pytest.raises(ValueError, match=error_msg):
+    # this is not the best error message, but should be good enough
+    error_msg = "unexpected number of output_commodities for node 'wind'"
+    with pytest.raises(AssertionError, match=error_msg):
         _ = Network([wind, light_bulb, hair_dryer])
 
 

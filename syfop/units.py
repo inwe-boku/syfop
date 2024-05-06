@@ -12,10 +12,10 @@ ureg.define("EUR = [currency]")
 # we will have a problem...
 default_units = {
     "electricity": ureg.MW,
-    "co2": ureg.t,
-    "hydrogen": ureg.t,
+    "co2": ureg.t / ureg.h,
+    "hydrogen": ureg.t / ureg.h,
     "gas": ureg.MW,
-    "methanol": ureg.t,
+    "methanol": ureg.t / ureg.h,
     # TODO heat? coal?
 }
 
@@ -46,5 +46,7 @@ def strip_unit(x, commodity):
     if is_pintxarray(x):
         commodity_unit = default_units[commodity]
         return x.pint.to(commodity_unit).pint.magnitude
+    elif isinstance(x, pint.Quantity):
+        return x.to(default_units[commodity]).magnitude
     else:
         return x
