@@ -33,7 +33,7 @@ extra = [
 # for development
 dev = [
     "pre-commit",
-    "black",
+    "black == 22.12.0",
     "isort",
     "flake8",
     # "flake8-docstrings",  # this is too strict ATM but would be nice to add
