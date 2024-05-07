@@ -1,0 +1,42 @@
+name: Tests
+
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # strategy:
+    #   matrix:
+    #     python-versions: ['3.7', '3.8', '3.9', '3.10']
+
+    steps:
+      - name: Set up Git repository
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip' # caching pip dependencies
+
+      - name: Install syfop and dependencies
+        run: |
+          sudo apt-get install graphviz graphviz-dev  # for pygraphviz
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev,test,extra]
+
+      - name: Lint with flake8
+        run: flake8
+
+      - name: Lint with black
+        run: black --check .
+
+      - name: Run unit tests (except the ones using Gurobi and CPLEX)
+        shell: bash -l {0}
+        run: python -m pytest --cov=. --cov-report=lcov -k "not gurobi and not cplex" tests
+
+      - name: Coveralls test coverage
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage.lcov

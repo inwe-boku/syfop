@@ -17,22 +17,36 @@ dependencies = [
     "pandas >= 1.5",    # no idea which version is really necessary
     "linopy == 0.3.8",  # might work also with newer versions, but they break APIs often
     "pint",             # used for units
+    "pint-xarray",      # used for units for xarray objects
+    "highspy",
     "networkx",
     "netgraph",         # optional dependency for plotting
 ]
 
 [project.optional-dependencies]
-# TODO not sure if this is complete
+# optional dependencies
+extra = [
+    "graphviz",
+    "pygraphviz",
+]
+
+# for development
 dev = [
   "pre-commit",
   "black",
   "isort",
   "flake8",
-  "flake8-docstrings",
+  # "flake8-docstrings",  # this is too strict ATM but would be nice to add
 ]
+
+# for running tests
 test = [
   "pytest",
   "pytest-cov"
+]
+# for building the documentation
+doc = [
+  # TODO
 ]
 
 [tool.setuptools]

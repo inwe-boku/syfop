@@ -2,7 +2,7 @@
 
 
 [![MIT License](https://img.shields.io/github/license/inwe-boku/syfop.svg)](https://choosealicense.com/licenses/mit/)
-[![CI](https://github.com/inwe-boku/syfop/actions/workflows/dev.yml/badge.svg)](https://github.com/inwe-boku/syfop/actions)
+[![CI](https://github.com/inwe-boku/syfop/actions/workflows/tests.yml/badge.svg)](https://github.com/inwe-boku/syfop/actions/workflows/tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/inwe-boku/syfop/badge.svg)](https://coveralls.io/github/inwe-boku/syfop)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![DOI](https://zenodo.org/badge/550867861.svg)](https://zenodo.org/doi/10.5281/zenodo.10869438)
@@ -40,16 +40,17 @@ see [demo.ipynb](notebooks/demo.ipynb)
 How to install
 --------------
 
-At the moment there is no package built for syfop. Use conda to setup an environment and then use
-`syfop` directly from a cloned Git repository:
+At the moment there is no package built for syfop, but it can be installed via pip directly from the
+repository:
 
-    git clone https://github.com/inwe-boku/syfop/
-    conda update -f env.yml
-    conda activate syfop
+    pip install git+https://github.com/inwe-boku/syfop
+
+The solver HiGHs is installed automatically . Other [solvers](https://linopy.readthedocs.io/en/latest/solvers.html) are supported too, but not installed automatically.
+
+To install development requirements run:
+
+    pip install -e 'syfop[test,dev] @ git+https://github.com/inwe-boku/syfop'
     pre-commit install
-
-
-The conda environment contains the solver HiGHs. Other [solvers](https://linopy.readthedocs.io/en/latest/solvers.html) are supported too, but not included in the conda environment.
 
 <!--
 To install Gurobiy:

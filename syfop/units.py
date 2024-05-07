@@ -18,6 +18,10 @@ default_units = {
     "gas": ureg.MW,
     "methanol": ureg.t / ureg.h,
     # TODO heat? coal?
+    # TODO this should be moved to unit tests as soon as we have a way to add user defined units
+    "milk": ureg.l / ureg.h,
+    "cacao": ureg.g / ureg.h,
+    "hot_chocolate": ureg.l / ureg.h,
 }
 
 
