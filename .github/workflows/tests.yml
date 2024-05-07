@@ -14,6 +14,11 @@ jobs:
       - name: Set up Git repository
         uses: actions/checkout@v4
 
+      - name: Fetch all Git tags
+        # this is necessary for version.py because git describe does not work on a shallow clone:
+        # https://stackoverflow.com/q/66349002/859591
+        run: git fetch -a
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
