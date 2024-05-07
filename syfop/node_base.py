@@ -1,6 +1,6 @@
 import linopy
 
-from syfop.units import default_units, strip_unit, ureg
+from syfop.units import default_units, interval_length, strip_unit, ureg
 from syfop.util import timeseries_variable
 
 
@@ -135,6 +135,16 @@ class NodeBase:
                 name=f"proportion_{self.name}_{commodity}",
             )
 
+    def _interval_length_h(self):
+        # XXX refactor: pass time_coords as parameter similar to create_variables
+        #
+        # this trusts on the check in Network that all time_coords are identical
+        # also assumes that there is at list one input flow (which is always the case, right?)
+        first_input_flow = list(self.input_flows.values())[0]
+        time_coords = first_input_flow.coords["time"]
+        interval_length_h = interval_length(time_coords).to(ureg.h).magnitude
+        return interval_length_h
+
     def _create_storage_constraints(self, model):
         """This method is not supposed to be called if the node does not have a storage."""
         size = self.storage.size
@@ -142,12 +152,15 @@ class NodeBase:
         charge = self.storage.charge
         discharge = self.storage.discharge
 
+        max_charging_per_timestamp = (
+            size * self._interval_length_h() * self.storage.max_charging_speed
+        )
         model.add_constraints(
-            charge - size * self.storage.max_charging_speed <= 0,
+            charge - max_charging_per_timestamp <= 0,
             name=f"max_charging_speed_{self.name}",
         )
         model.add_constraints(
-            discharge - size * self.storage.max_charging_speed <= 0,
+            discharge - max_charging_per_timestamp <= 0,
             name=f"max_discharging_speed_{self.name}",
         )
         model.add_constraints(level - size <= 0, name=f"storage_max_level_{self.name}")
@@ -303,7 +316,10 @@ class NodeBase:
             rhs = 0
 
         if self.storage is not None:
-            lhs = lhs + self.storage.charge - self.storage.discharge
+            # no need for unit conversion, Example: charge and discharge are MWh and lhs in MW
+            lhs = lhs + 1 / self._interval_length_h() * (
+                self.storage.charge - self.storage.discharge
+            )
 
         model.add_constraints(lhs == rhs, name=f"inout_flow_balance_{self.name}")
 
@@ -333,8 +349,8 @@ class NodeBase:
 
     def storage_cost_magnitude(self, currency_unit):
         assert hasattr(self, "storage") and self.storage is not None, "node has no storage"
-        storage_unit = default_units[self._get_size_commodity(self)]
-        return self.storage.costs.to(currency_unit / storage_unit).magnitude
+        storage_unit = default_units[self._get_size_commodity()]
+        return self.storage.costs.to(currency_unit / (storage_unit * ureg.h)).magnitude
 
 
 class NodeScalableBase(NodeBase):

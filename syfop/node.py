@@ -105,8 +105,7 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
     def _get_size_commodity(self):
         # TODO refactor this into a property
 
-        # there can be only one output commodity because we don't have ouptut_properties here,
-        # this is tested elsewehere already
+        # there can be only one output commodity because we don't have convertion_factors here
         assert len(set(self.output_commodities)) == 1
         return self.output_commodities[0]
 
@@ -278,6 +277,10 @@ class Storage:
     commodity of its node. Storage for nodes with multiple output commodities are not supported at
     the moment.
 
+    The storage for one node does not support multiple different output commodities at the moment.
+    If you need a storage for different output commodities, create a separate nodes for each
+    commodity and attach a separate storage there.
+
     **Examples:** hydrogen storage, CO2 storage, battery.
 
     Attributes
@@ -294,6 +297,12 @@ class Storage:
         but it is not forbidden in any way. However, such a case will not be optimal if
         ``charging_loss>0``.
 
+    **Note:** The units of the variables ``size``, ``level``, ``charge`` and ``discharge`` are
+    given by the unit of the commodity times hours (independently of the interval size between time
+    stamps). This means for a battery, the variables will be given in `MWh` if the unit for
+    'electricity' is set to `MW`. This means that the values in ``charge`` and ``discharge`` depend
+    on the interval of time stamps.
+
     """
 
     # Note: atm this is not implemented as node class. Probably could be done, but might be more
@@ -305,17 +314,19 @@ class Storage:
         costs : pint.Quantity
             Storage costs per unit of size, e.g. ``1000 * ureg.EUR/ureg.kWh``.
         max_charging_speed : float
-            Maximum charging speed, i.e. the share of the total size that can be charged per time
-            stamp. For example, if the maximum charging speed is 0.5, two time stamps are needed to
-            charge the storage completely.
+            Maximum charging speed, i.e. the share of the total size that can be charged per hour
+            (indepenent of the length of the interval between time stamps). For example, if the
+            maximum charging speed is 0.5, two hours are needed to charge the storage completely.
+            The same limit is applied for discharging speed.
         storage_loss : float
-            Loss of stored commodity per time stamp as share of the stored commodity. For example,
-            if the storage loss for a battery is 0.01 and the battery is half full, 0.5% of the
-            battery capacity is lost in the next time stamp.
+            Loss of stored commodity per hour (indepenent of the length of the interval between
+            time stamps) as share of the stored commodity. For example, if the storage loss for a
+            battery is 0.01 and the battery is half full, 0.5% of the battery capacity is lost in
+            the next hour.
         charging_loss : float
-            Loss of charged commodity per time stamp as share of the charged commodity. For
-            example, if ``charging_loss`` is 0.01 and there is 100kg of excess hydrogen to be
-            stored in a certain timestamp, only 99kg will end up in the storage.
+            Loss of charged commodity as share of the charged commodity. For example, if
+            ``charging_loss`` is 0.01 and there is 100kg of excess hydrogen to be stored in a
+            certain timestamp, only 99kg will end up in the storage.
 
         """
         self.costs = costs  # per size
@@ -326,6 +337,8 @@ class Storage:
         # a loss which equals to 1 does not make sense, because everything would be lost
         # if charging_loss == 0. solutions might be indeterministic because charging and
         # discharging might be done in the same time stamp
-        assert 0 <= storage_loss < 1, "storage_loss must be smaller than 1"
-        assert 0 <= charging_loss < 1, "charging_loss must be smaller than 1"
-        assert 0 < max_charging_speed <= 1, "max_charging_speed must not be greater than 1"
+        assert 0 <= storage_loss < 1, "storage_loss must be non-negative and smaller than 1"
+        assert 0 <= charging_loss < 1, "charging_loss must be non-negative and smaller than 1"
+        assert (
+            0 < max_charging_speed <= 1
+        ), "max_charging_speed must be positive and not be greater than 1"

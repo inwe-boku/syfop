@@ -92,7 +92,7 @@ def test_simple_co2_storage(storage_type):
     """
 
     wind_flow = const_time_series(0.5)
-    co2_flow = const_time_series(0.5)
+    co2_flow = const_time_series(0.5) * ureg.t / ureg.h
     co2_storage = None
     electricity_storage = None
     hydrogen_storage = None
@@ -104,7 +104,7 @@ def test_simple_co2_storage(storage_type):
 
     if storage_type == "co2_storage":
         co2_flow = 2 * co2_flow
-        co2_flow[1::2] = 0
+        co2_flow[1::2] = np.array(0.0) * ureg.t / ureg.h
         co2_storage = Storage(
             costs=1000 * ureg.EUR / (ureg.t / ureg.h),  # price not relevant, see comment above
             max_charging_speed=1.0,
@@ -115,7 +115,7 @@ def test_simple_co2_storage(storage_type):
         expected_storage_costs = 1000 * 0.5
     elif storage_type == "electricity_storage":
         electricity_storage = Storage(
-            costs=100,  # price not relevant, see comment above
+            costs=100 * ureg.EUR / ureg.MWh,  # price not relevant, see comment above
             max_charging_speed=1.0,
             storage_loss=0.0,
             charging_loss=0.0,
@@ -126,7 +126,7 @@ def test_simple_co2_storage(storage_type):
         expected_storage_costs = 100 * 3.0 * 0.5
     elif storage_type == "hydrogen_storage":
         hydrogen_storage = Storage(
-            costs=30,  # price not relevant, see comment above
+            costs=30 * ureg.EUR / ureg.t,  # price not relevant, see comment above
             max_charging_speed=1.0,
             storage_loss=0.0,
             charging_loss=0.0,
@@ -145,7 +145,7 @@ def test_simple_co2_storage(storage_type):
     wind = NodeScalableInput(
         name="wind",
         input_profile=wind_flow,
-        costs=1.3,
+        costs=1.3 * ureg.EUR / ureg.MW,
         output_unit="MW",
         storage=electricity_storage,
     )
@@ -153,22 +153,30 @@ def test_simple_co2_storage(storage_type):
         name="hydrogen",
         inputs=[wind],
         input_commodities="electricity",
-        costs=3,
+        costs=3 * ureg.EUR / (ureg.t / ureg.h),
+        convert_factor=ureg.t / ureg.h / ureg.MW,
         output_unit="t",
         storage=hydrogen_storage,
     )
     co2 = NodeFixInput(
-        name="co2", input_flow=co2_flow, storage=co2_storage, costs=0, output_unit="t"
+        name="co2",
+        input_flow=co2_flow,
+        storage=co2_storage,
+        costs=0,
+        output_unit="t",
     )
 
     methanol_synthesis = Node(
         name="methanol_synthesis",
         inputs=[co2, hydrogen],
         input_commodities=["co2", "hydrogen"],
-        costs=1.2,
+        costs=1.2 * ureg.EUR / (ureg.t / ureg.h),
         output_unit="t",
         size_commodity="methanol",
-        input_proportions={"co2": 0.25, "hydrogen": 0.75},
+        input_proportions={"co2": 1 * ureg.t / ureg.h, "hydrogen": 3 * ureg.t / ureg.h},
+        convert_factors={
+            "methanol": ("hydrogen", 1 / 0.75),
+        },
     )
 
     network = Network([wind, hydrogen, co2, methanol_synthesis])
