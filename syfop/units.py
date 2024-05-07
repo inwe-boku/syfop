@@ -1,3 +1,4 @@
+import numpy as np
 import pint
 import pint_xarray  # noqa: F401
 
@@ -50,3 +51,13 @@ def strip_unit(x, commodity):
         return x.to(default_units[commodity]).magnitude
     else:
         return x
+
+
+def interval_length(time_coords):
+    # see also https://stackoverflow.com/a/78373992/859591
+    interval_lengths = np.diff(time_coords)
+    # this works only if equidistant... should have been checked before already.
+    assert (interval_lengths == interval_lengths[0]).all(), "timestes are not equidistant"
+    interval_length_h = interval_lengths[0] / np.timedelta64(1, "h")
+
+    return interval_length_h * ureg.h
