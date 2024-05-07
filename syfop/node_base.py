@@ -26,6 +26,7 @@ class NodeBase:
         # this needs to be filled later
         self.outputs = None
         self.output_flows = None
+        self._size_commodity = None
 
         # overwritten in some subclasses
         self.input_commodities = None
@@ -60,6 +61,26 @@ class NodeBase:
                 f" a dict with keys matching names of {input_or_output}_commodities: "
                 f"{set(commodities)}"
             )
+
+    @property
+    def size_commodity(self):
+        """Which commodity is used to define the size of the Node."""
+        # self._size_commodity can be not None only for type Node. All other types should have
+        # exactly one output commodity set - either directly in __init__ or by Network.__init__().
+        if self._size_commodity is None:
+            if len(set(self.output_commodities)) == 0:
+                raise ValueError(
+                    f"node '{self.name}' has no output nodes defined, so "
+                    "size_commmodity must be set"
+                )
+            if len(set(self.output_commodities)) > 1:
+                raise ValueError(
+                    "size_commodity not provided, but required for multiple "
+                    "different output commodities"
+                )
+            return self.output_commodities[0]
+        else:
+            return self._size_commodity
 
     def has_costs(self):
         return not (self.costs == 0.0 or self.costs is None)
@@ -349,7 +370,7 @@ class NodeBase:
 
     def storage_cost_magnitude(self, currency_unit):
         assert hasattr(self, "storage") and self.storage is not None, "node has no storage"
-        storage_unit = default_units[self._get_size_commodity()]
+        storage_unit = default_units[self.size_commodity]
         return self.storage.costs.to(currency_unit / (storage_unit * ureg.h)).magnitude
 
 
@@ -360,7 +381,7 @@ class NodeScalableBase(NodeBase):
     def costs_magnitude(self, currency_unit):
         """Returns the costs scaled to ``currency_unit`` / ``size_unit``, where ``size_unit`` is
         the unit of the output commodity."""
-        size_unit = default_units[self._get_size_commodity()]
+        size_unit = default_units[self.size_commodity]
         costs_mag = self.costs.to(currency_unit / size_unit).magnitude
         return costs_mag
 

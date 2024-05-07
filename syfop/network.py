@@ -219,11 +219,6 @@ class Network:
                 ]
 
                 if len(node.output_commodities) == 0:
-                    if node.size_commodity is None:
-                        raise ValueError(
-                            f"node '{node.name}' has no output nodes defined, so "
-                            "size_commmodity must be set"
-                        )
                     # here we have no ouputs of a Node, so there is only the leaf output flow
                     node.output_commodities = [node.size_commodity]
 

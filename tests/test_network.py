@@ -106,7 +106,7 @@ def test_simple_co2_storage(storage_type):
         co2_flow = 2 * co2_flow
         co2_flow[1::2] = np.array(0.0) * ureg.t / ureg.h
         co2_storage = Storage(
-            costs=1000 * ureg.EUR / (ureg.t / ureg.h),  # price not relevant, see comment above
+            costs=1000 * ureg.EUR / ureg.t,  # price not relevant, see comment above
             max_charging_speed=1.0,
             storage_loss=0.0,
             charging_loss=0.0,

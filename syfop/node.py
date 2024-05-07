@@ -102,13 +102,6 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
         )
         self.input_flows = None
 
-    def _get_size_commodity(self):
-        # TODO refactor this into a property
-
-        # there can be only one output commodity because we don't have convertion_factors here
-        assert len(set(self.output_commodities)) == 1
-        return self.output_commodities[0]
-
     def create_variables(self, model, time_coords):
         super().create_variables(model, time_coords)
         self.input_flows = {"": self.size * self.input_profile}
@@ -198,7 +191,7 @@ class Node(NodeScalableBase):
         size_commodity : str
             Which commodity is used to define the size of the Node. This parameter is only
             required, if there is more than one output commodity or if there are no output nodes
-            connected.
+            connected, otherwise it is defined automatically.
         input_proportions : dict
             Proportions of the input flows. The keys are the names of the input commodities and the
             values are a quantity of the type of the input commodity, all multiples of these values
@@ -233,23 +226,11 @@ class Node(NodeScalableBase):
         # output_proportions are checked in Network.__init__, when we know the output commodities
         self._check_proportions_valid(input_proportions, self.input_commodities, "input")
 
-        self.size_commodity = size_commodity
+        self._size_commodity = size_commodity
         self.input_proportions = input_proportions
         self.output_proportions = output_proportions
 
         self.input_flow_costs = input_flow_costs
-
-    def _get_size_commodity(self):
-        # TODO refactor this into a property
-        if self.size_commodity is None:
-            if len(set(self.output_commodities)) > 1:
-                raise ValueError(
-                    "size_commodity not provided, but required for multiple "
-                    "different output commodities"
-                )
-            return self.output_commodities[0]
-        else:
-            return self.size_commodity
 
     def create_constraints(self, model):
         super().create_constraints(model)
@@ -258,7 +239,7 @@ class Node(NodeScalableBase):
         # Note: this is not needed for NodeScalableInput and NodeScalableOutput because there the
         # input_profile and output_profile are checked to be between 0 and 1.
         if self.size is not None:
-            output_flows = self._get_output_flows(self._get_size_commodity())
+            output_flows = self._get_output_flows(self.size_commodity)
             lhs = sum(output_flows) - self.size
 
             # FIXME this is probably probably missing for NodeScalableInput
