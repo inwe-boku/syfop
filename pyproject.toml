@@ -32,21 +32,22 @@ extra = [
 
 # for development
 dev = [
-  "pre-commit",
-  "black",
-  "isort",
-  "flake8",
-  # "flake8-docstrings",  # this is too strict ATM but would be nice to add
+    "pre-commit",
+    "black",
+    "isort",
+    "flake8",
+    # "flake8-docstrings",  # this is too strict ATM but would be nice to add
 ]
 
 # for running tests
 test = [
-  "pytest",
-  "pytest-cov"
+    "pytest",
+    "pytest-cov"
 ]
 # for building the documentation
 doc = [
-  # TODO
+    "sphinx",
+    "sphinxawesome_theme"
 ]
 
 [tool.setuptools]
