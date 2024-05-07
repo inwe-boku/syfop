@@ -13,8 +13,9 @@ jobs:
     steps:
       - name: Set up Git repository
         uses: actions/checkout@v4
-        # unfortunately we need to fetch all tags for version.py to work
-        fetch-depth: 0
+        with:
+          # unfortunately we need to fetch all tags for version.py to work
+          fetch-depth: 0
 
       - name: Fetch all Git tags
         # this is necessary for version.py because git describe does not work on a shallow clone:
