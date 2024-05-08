@@ -6,6 +6,7 @@ syfop - Synthetic fuel optimizer
     :hidden:
     :titlesonly:
 
+    installation
     limitations
     api_reference/index
 

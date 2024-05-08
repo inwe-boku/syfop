@@ -47,7 +47,8 @@ test = [
 # for building the documentation
 doc = [
     "sphinx",
-    "sphinxawesome_theme"
+    "sphinxawesome_theme",
+    "myst-parser",              # support for markdown
 ]
 
 [tool.setuptools]

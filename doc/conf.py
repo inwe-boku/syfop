@@ -25,7 +25,14 @@ extensions = [
     "sphinx.ext.napoleon",  # support for numpy and google docstrings
     "sphinx.ext.viewcode",  # show source code in documentation
     "sphinx.ext.intersphinx",  # link to other projects
+    "myst_parser",
 ]
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".txt": "markdown",
+    ".md": "markdown",
+}
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
