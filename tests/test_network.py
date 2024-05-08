@@ -36,7 +36,6 @@ def test_expensive_solar_pv(solver):
     co2 = NodeFixInput(
         name="co2",
         input_flow=const_time_series(5) * ureg.t / ureg.h,
-        costs=0,
     )
 
     methanol_synthesis = Node(
@@ -155,7 +154,6 @@ def test_simple_co2_storage(storage_type):
         name="co2",
         input_flow=co2_flow,
         storage=co2_storage,
-        costs=0,
     )
 
     methanol_synthesis = Node(
@@ -248,7 +246,6 @@ def test_no_input_node(input_flow_costs):
         inputs=[gas],
         input_commodities="electricity",
         output_flow=const_time_series(5.0, time_coords_num=time_coords_num) * ureg.MW,
-        costs=0,
     )
     network = Network([gas, demand], time_coords_num=time_coords_num)
     network.optimize(default_solver)
@@ -267,7 +264,6 @@ def test_no_output_node():
     wind = NodeFixInput(
         name="wind",
         input_flow=const_time_series(5, time_coords_num=time_coords_num) * ureg.MW,
-        costs=0,  # FIXME NodeFixInput is not usable if we don't set the size to 0
     )
     hydrogen = Node(
         name="hydrogen",
@@ -297,7 +293,6 @@ def simple_demand_network(time_coords_num=DEFAULT_NUM_TIME_STEPS, wind_input_flo
         inputs=[wind],
         input_commodities="electricity",
         output_flow=const_time_series(5.0, time_coords_num=time_coords_num) * ureg.MW,
-        costs=0,
     )
 
     network = Network([wind, demand], time_coords_num=time_coords_num)
@@ -341,7 +336,6 @@ def test_inconsistent_time_coords(input_output, wrong_length):
         inputs=[electricity],
         output_flow=const_time_series(0.42, **time_coords_params["output"]),
         input_commodities="electricity",
-        costs=0,
     )
 
     with pytest.raises(ValueError, match=error_msg_pattern):
@@ -405,7 +399,6 @@ def test_hot_chocolate(with_curtailment):
         )
         * ureg.l
         / ureg.h,
-        costs=0,
     )
 
     nodes = [cow, cacao_delivery, hot_chocolate, hot_chocolate_consumer]
@@ -492,7 +485,6 @@ def test_network_add_constraints():
         inputs=[wind],
         input_commodities="electricity",
         output_flow=const_time_series(5.0) * ureg.MW,
-        costs=0,
     )
     curtailment = Node(
         name="curtailment",
@@ -540,7 +532,6 @@ def test_unconnected_nodes():
         inputs=[],
         input_commodities="electricity",
         output_flow=const_time_series(5.0),
-        costs=0,
     )
 
     # is the order of components deterministic here? would need to know how networkx checks it, but
@@ -592,7 +583,6 @@ def test_node_with_same_name():
         inputs=[wind],
         input_commodities="electricity",
         output_flow=const_time_series(5.0),
-        costs=0,
     )
 
     with pytest.raises(ValueError, match="node names are not unique: wind, wind"):

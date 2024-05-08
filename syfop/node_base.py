@@ -385,32 +385,7 @@ class NodeInputBase(NodeBase):
 
     Do not initialize directly, use sub classes."""
 
-    def __init__(
-        self,
-        name,
-        input_flow,
-        costs,
-        output_proportions=None,
-        storage=None,
-    ):
-        """
-        Parameters
-        ----------
-        name : str
-            Name of the node, must be unique in the network
-        input_flow : xr.DataArray
-            Time series of the input flow.
-        costs : pint.Quantity
-            Node costs per size.
-        output_proportions : dict
-            Proportions of the output flows. The keys are the names of the output commodities and
-            the values are a quantity of the type of the output commodity, all multiples of these
-            values are allowed.
-            Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
-        storage : Storage
-            Storage attached to the node.
-
-        """
+    def __init__(self, name, input_flow, costs, output_proportions=None, storage=None):
         super().__init__(name, storage, costs)
 
         self.inputs = []
@@ -441,30 +416,6 @@ class NodeOutputBase(NodeBase):
         input_proportions=None,
         storage=None,
     ):
-        """
-        Parameters
-        ----------
-        name : str
-            Name of the node, must be unique in the network
-        inputs : list of subclasses of syfob.nodes.NodeBase
-            node objects that are inputs to this node, i.e. from each input node there is a
-            connection to this node
-        input_commodities : list of str
-            List of input commodities. If all inputs have the same commodity, a single string can
-            be given. Only one input commodity is supported, i.e. if ``input_commodities`` is of
-            type ``list`` all elements should be equal.
-        output_flow : xr.DataArray
-            Time series of the output flow.
-        costs : pint.Quantity
-            Costs per size.
-        input_proportions : dict
-            Proportions of the input flows. The keys are the names of the input commodities and the
-            values are a quantity of the type of the input commodity, all multiples of these values
-            are allowed. Example: ``{"electricity": 0.3 * ureg.MW, "co2": 2.3 * ureg.t/ureg.h}``.
-        storage : Storage
-            Storage attached to the node
-
-        """
         super().__init__(name, storage, costs)
 
         # TODO add check that inputs does not contain nodes of type NodeOutputBase?
