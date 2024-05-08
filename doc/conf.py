@@ -28,6 +28,8 @@ extensions = [
     "myst_parser",
 ]
 
+myst_enable_extensions = ["dollarmath", "amsmath"]
+
 source_suffix = {
     ".rst": "restructuredtext",
     ".txt": "markdown",
@@ -58,6 +60,10 @@ napoleon_numpy_docstring = True
 
 intersphinx_mapping = {
     "linopy": ("https://linopy.readthedocs.io/en/latest/", None),
+    "pint": ("https://pint.readthedocs.io/en/stable/", None),
+    "python": ("https://docs.python.org/3", None),
+    # 'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    "pandas": ("http://pandas.pydata.org/pandas-docs/dev", None),
 }
 
 
