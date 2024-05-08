@@ -320,8 +320,6 @@ class Network:
             additional parameters passed to the solver via :py:meth:`linopy.model.Model.solve()`.
 
         """
-        # TODO infeasible should raise?
-
         t0 = time.time()
 
         io_api = "direct" if solver_name in ("gurobi", "highs") else "lp"

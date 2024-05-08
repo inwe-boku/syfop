@@ -1,6 +1,11 @@
 API reference
 =============
 
+..
+   Files in here have been generated with the following command:
+
+   PYTHONPATH=.. sphinx-apidoc ../syfop -o api_reference -e
+
 .. toctree::
    :maxdepth: 1
    :glob:
