@@ -117,7 +117,8 @@ class NodeScalableOutput(NodeScalableBase, NodeOutputBase):
 
 class Node(NodeScalableBase):
     """Represents a node which has no preset input or output flows or profiles. That means, that
-    input and output flows are determined by the nodes connected to it.
+    input and output flows are determined by the nodes connected to it (they are optimization
+    variables).
 
     If `costs` is given, the node has a size variable:
 
@@ -136,9 +137,9 @@ class Node(NodeScalableBase):
     capacity of the electrolyzer. The input flow is the electricity and the output flow is the
     hydrogen. The costs are the costs per per unit of capacity.
 
-    **Electricity:** In a network where electricity is produced from different renewable sources,
-    a virtual electricity node, which does not represent real technology, can be used to implement
-    a combined storage.The costs should be set to zero, because the node does not represent a real
+    **Electricity:** In a network where electricity is produced from different renewable sources, a
+    virtual electricity node, which does not represent real technology, can be used to implement a
+    combined storage. The costs should be set to zero, because the node does not represent real
     technology.
 
     **Curtailment:** In a network with renewable electricity sources, a curtailment node can be
@@ -179,12 +180,12 @@ class Node(NodeScalableBase):
             Conversion factor for the output commodity. If this node has multiple different input
             comodities, the parameter ``convert_factors`` needs to be used.
         convert_factors : dict
-            a dictionary where each output commodity maps to a tuple of a input commodity to a
-            convert factor, example: ``{'hydrogen': ('electricity', 42 * ureg.t / ureg.MW}``
+            a dictionary where each output commodity maps to a tuple of an input commodity to a
+            convert factor, example: ``{'hydrogen': ('electricity', 42 * ureg.t / ureg.MW)}``
         size_commodity : str
             Which commodity is used to define the size of the Node. This parameter is only
             required, if there is more than one output commodity or if there are no output nodes
-            connected, otherwise it is defined automatically.
+            connected (and it cannot be determined automatically).
         input_proportions : dict
             Proportions of the input flows. The keys are the names of the input commodities and the
             values are a quantity of the type of the input commodity, all multiples of these values
@@ -192,13 +193,12 @@ class Node(NodeScalableBase):
         output_proportions : dict
             Proportions of the output flows. The keys are the names of the output commodities and
             the values are a quantity of the type of the output commodity, all multiples of these
-            values are allowed.
-            Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
+            values are allowed. Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
         storage : Storage
             Storage attached to the node.
         input_flow_costs : pint.Quantity
             Costs per unit of input flow. Use this to add fuel costs. This is not available for
-            oder node types: NodeFixInput would add constant input flow costs, which does not
+            other node types: NodeFixInput would add constant input flow costs, which does not
             change the optimation result and NodeScalableInput would add costs which are
             proportional to its size, which could be added to the ``costs`` parameter. At maximum
             one input node is allowed if ``input_flow_costs`` is given.

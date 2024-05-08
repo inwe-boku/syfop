@@ -54,17 +54,16 @@ class Network:
         solver_dir=None,
         units={},
     ):
-        """Create a network of nodes.
-
+        """
         Parameters
         ----------
         nodes : list of subclasses of syfop.node.NodeBase
             List of nodes to be included in the network. All nodes used as input nodes need to be
-            included in this list otherwise a ValueError is raised.
+            included in this list otherwise a ``ValueError`` is raised.
         time_coords : pandas.DatetimeIndex
             time coordinates used for all time series in the network, typically hourly time steps
-            for a year. If None, time_coords are generated using ``time_coords_freq``,
-            ``time_coords_num`` and ``time_coords_year``.
+            for a year. If ``None``, ``time_coords`` are generated using the parameters
+            ``time_coords_freq``, ``time_coords_num`` and ``time_coords_year``.
         time_coords_freq : str
             used only if ``time_coords`` is ``None``, frequency of the time coordinates
         time_coords_num : int
@@ -285,7 +284,7 @@ class Network:
         To create the constraint, variables can be accessed via ``Network.model.variables`` or by
         node attributes, e.g. in ``Network.nodes_dict['wind'].size`` for a node with name *wind*.
 
-        This method must be called before :py:meth:`Network.optimize()`` is called.
+        This method must be called before :py:meth:`Network.optimize()` is called.
 
         """
         return self.model.add_constraints(*args, **kwargs)
@@ -316,8 +315,7 @@ class Network:
         ----------
         solver_name : str, optional
             all solvers supported by `linopy
-            <https://linopy.readthedocs.io/en/latest/prerequisites.html#install-a-solver>`__, by
-            default "highs"
+            <https://linopy.readthedocs.io/en/latest/prerequisites.html#install-a-solver>`__
         **kwargs
             additional parameters passed to the solver via :py:meth:`linopy.model.Model.solve()`.
 
