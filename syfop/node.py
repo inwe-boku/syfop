@@ -61,7 +61,6 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
         name,
         input_profile,
         costs,
-        output_unit,
         output_proportions=None,
         storage=None,
     ):
@@ -74,8 +73,6 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
             Time series of the input flow. Must be capacity factors, i.e. between 0 and 1.
         costs : pint.Quantity
             Costs per unit of size.
-        output_unit : list of str or str
-            Unit of the output commodity.
         output_proportions : dict
             Proportions of the output flows. The keys are the names of the output commodities and
             the values are a quantity of the type of the output commodity, all multiples of these
@@ -96,7 +93,6 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
             name=name,
             input_flow=None,  # overwritten by create_variables()
             costs=costs,
-            output_unit=output_unit,
             output_proportions=output_proportions,
             storage=storage,
         )
@@ -157,7 +153,6 @@ class Node(NodeScalableBase):
         inputs,
         input_commodities,
         costs,
-        output_unit,
         convert_factor=1.0,
         convert_factors=None,
         size_commodity=None,
@@ -180,8 +175,6 @@ class Node(NodeScalableBase):
         costs : pint.Quantity
             Costs per size. See also ``size_commodity``. Can be set to zero, e.g. for curtailing
             nodes: in this case no size variable will be created.
-        output_unit : str
-            Unit of the output commodity.
         convert_factor : float or pint.Quantity
             Conversion factor for the output commodity. If this node has multiple different input
             comodities, the parameter ``convert_factors`` needs to be used.
@@ -211,7 +204,7 @@ class Node(NodeScalableBase):
             one input node is allowed if ``input_flow_costs`` is given.
 
         """
-        super().__init__(name, storage, costs, output_unit, convert_factor, convert_factors)
+        super().__init__(name, storage, costs, convert_factor, convert_factors)
 
         # TODO add check that inputs does not contain nodes of type NodeOutputBase?
         self.inputs = inputs

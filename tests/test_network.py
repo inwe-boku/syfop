@@ -19,13 +19,11 @@ def test_expensive_solar_pv(solver):
         name="wind",
         input_profile=const_time_series(0.5),
         costs=1 * ureg.EUR / ureg.MW,
-        output_unit="MW",
     )
     solar_pv = NodeScalableInput(
         name="solar_pv",
         input_profile=const_time_series(0.5),
         costs=20.0 * ureg.EUR / ureg.MW,
-        output_unit="MW",
     )
 
     electricity = Node(
@@ -33,14 +31,12 @@ def test_expensive_solar_pv(solver):
         inputs=[solar_pv, wind],
         input_commodities="electricity",
         costs=0,
-        output_unit="MW",
     )
 
     co2 = NodeFixInput(
         name="co2",
         input_flow=const_time_series(5) * ureg.t / ureg.h,
         costs=0,
-        output_unit="t",
     )
 
     methanol_synthesis = Node(
@@ -52,7 +48,6 @@ def test_expensive_solar_pv(solver):
             # this is not a realistic value probably
             "methanol": ("electricity", 1.0 * ureg.t / ureg.h / ureg.MW)
         },
-        output_unit="t",
         size_commodity="methanol",
         input_proportions={"co2": 0.25 * ureg.t / ureg.h, "electricity": 0.75 * ureg.MW},
     )
@@ -146,7 +141,6 @@ def test_simple_co2_storage(storage_type):
         name="wind",
         input_profile=wind_flow,
         costs=1.3 * ureg.EUR / ureg.MW,
-        output_unit="MW",
         storage=electricity_storage,
     )
     hydrogen = Node(
@@ -155,7 +149,6 @@ def test_simple_co2_storage(storage_type):
         input_commodities="electricity",
         costs=3 * ureg.EUR / (ureg.t / ureg.h),
         convert_factor=ureg.t / ureg.h / ureg.MW,
-        output_unit="t",
         storage=hydrogen_storage,
     )
     co2 = NodeFixInput(
@@ -163,7 +156,6 @@ def test_simple_co2_storage(storage_type):
         input_flow=co2_flow,
         storage=co2_storage,
         costs=0,
-        output_unit="t",
     )
 
     methanol_synthesis = Node(
@@ -171,7 +163,6 @@ def test_simple_co2_storage(storage_type):
         inputs=[co2, hydrogen],
         input_commodities=["co2", "hydrogen"],
         costs=1.2 * ureg.EUR / (ureg.t / ureg.h),
-        output_unit="t",
         size_commodity="methanol",
         input_proportions={"co2": 1 * ureg.t / ureg.h, "hydrogen": 3 * ureg.t / ureg.h},
         convert_factors={
@@ -216,13 +207,17 @@ def test_simple_co2_storage(storage_type):
 def test_missing_node():
     """If a node is used as input but not passed to the Network constructor, this is an error.
     This might change in future."""
-    wind = Node(name="wind", inputs=[], input_commodities=[], costs=10, output_unit="MW")
+    wind = Node(
+        name="wind",
+        inputs=[],
+        input_commodities=[],
+        costs=10,
+    )
     electricity = Node(
         name="electricity",
         inputs=[wind],
         input_commodities="electricity",
         costs=0,
-        output_unit="MW",
     )
 
     with pytest.raises(ValueError, match="missing in list of nodes.* wind"):
@@ -246,7 +241,6 @@ def test_no_input_node(input_flow_costs):
         inputs=[],
         input_commodities="gas",
         costs=1 * ureg.EUR / ureg.MW,
-        output_unit="MW",
         **extra_kwrgs,
     )
     demand = NodeFixOutput(
@@ -255,7 +249,6 @@ def test_no_input_node(input_flow_costs):
         input_commodities="electricity",
         output_flow=const_time_series(5.0, time_coords_num=time_coords_num) * ureg.MW,
         costs=0,
-        output_unit="MW",
     )
     network = Network([gas, demand], time_coords_num=time_coords_num)
     network.optimize(default_solver)
@@ -275,7 +268,6 @@ def test_no_output_node():
         name="wind",
         input_flow=const_time_series(5, time_coords_num=time_coords_num) * ureg.MW,
         costs=0,  # FIXME NodeFixInput is not usable if we don't set the size to 0
-        output_unit="t",
     )
     hydrogen = Node(
         name="hydrogen",
@@ -284,7 +276,6 @@ def test_no_output_node():
         input_commodities="electricity",
         costs=3 * ureg.EUR / (ureg.t / ureg.h),
         convert_factor=ureg.t / ureg.h / ureg.MW,
-        output_unit="t",
     )
     network = Network([wind, hydrogen], time_coords_num=time_coords_num)
     network.optimize(default_solver)
@@ -300,7 +291,6 @@ def simple_demand_network(time_coords_num=DEFAULT_NUM_TIME_STEPS, wind_input_flo
         name="wind",
         input_profile=const_time_series(wind_input_flow, time_coords_num=time_coords_num),
         costs=1 * ureg.EUR / ureg.MW,
-        output_unit="MW",
     )
     demand = NodeFixOutput(
         name="demand",
@@ -308,7 +298,6 @@ def simple_demand_network(time_coords_num=DEFAULT_NUM_TIME_STEPS, wind_input_flo
         input_commodities="electricity",
         output_flow=const_time_series(5.0, time_coords_num=time_coords_num) * ureg.MW,
         costs=0,
-        output_unit="MW",
     )
 
     network = Network([wind, demand], time_coords_num=time_coords_num)
@@ -340,14 +329,12 @@ def test_inconsistent_time_coords(input_output, wrong_length):
         name="wind",
         input_profile=const_time_series(0.42, **time_coords_params["input"]),
         costs=1,
-        output_unit="MW",
     )
     electricity = Node(
         name="electricity",
         inputs=[wind],
         input_commodities="electricity",
         costs=0,
-        output_unit="MW",
     )
     demand = NodeFixOutput(
         name="demand",
@@ -355,7 +342,6 @@ def test_inconsistent_time_coords(input_output, wrong_length):
         output_flow=const_time_series(0.42, **time_coords_params["output"]),
         input_commodities="electricity",
         costs=0,
-        output_unit="MW",
     )
 
     with pytest.raises(ValueError, match=error_msg_pattern):
@@ -386,7 +372,6 @@ def test_hot_chocolate(with_curtailment):
         # this is a weird workaround, because we know only the milk price, but costs here is
         # relative to the cow size not to the amount of milk
         costs=1.49 * float(milk_flow[0]) * ureg.EUR / (ureg.l / ureg.h),
-        output_unit="l",
     )
 
     # 1g of cacao powder is 1.67ml if desolved in milk
@@ -395,7 +380,6 @@ def test_hot_chocolate(with_curtailment):
         input_profile=cacao_delivery_flow,
         # workaround, same as for cow costs
         costs=3.2e-3 * float(cacao_delivery_flow[0]) * ureg.EUR / (ureg.g / ureg.h),
-        output_unit="g",
     )
 
     hot_chocolate = Node(
@@ -408,7 +392,6 @@ def test_hot_chocolate(with_curtailment):
             "hot_chocolate": ("milk", 1.0),
         },
         costs=0,
-        output_unit="l",
     )
 
     # the consumer drinks 1 cup of cocao per time stamp, which is 240ml of milk and 8g of cacao
@@ -423,7 +406,6 @@ def test_hot_chocolate(with_curtailment):
         * ureg.l
         / ureg.h,
         costs=0,
-        output_unit="l",
     )
 
     nodes = [cow, cacao_delivery, hot_chocolate, hot_chocolate_consumer]
@@ -434,7 +416,6 @@ def test_hot_chocolate(with_curtailment):
             inputs=[cow],
             input_commodities="milk",
             costs=0,
-            output_unit="l",
             size_commodity="milk",
         )
 
@@ -505,7 +486,6 @@ def test_network_add_constraints():
         name="wind",
         input_profile=const_time_series(0.5),
         costs=1 * ureg.EUR / ureg.MW,
-        output_unit="MW",
     )
     demand = NodeFixOutput(
         name="demand",
@@ -513,7 +493,6 @@ def test_network_add_constraints():
         input_commodities="electricity",
         output_flow=const_time_series(5.0) * ureg.MW,
         costs=0,
-        output_unit="MW",
     )
     curtailment = Node(
         name="curtailment",
@@ -521,7 +500,6 @@ def test_network_add_constraints():
         input_commodities="electricity",
         size_commodity="electricity",
         costs=0,
-        output_unit="MW",
     )
     network = Network([wind, demand, curtailment])
 
@@ -556,7 +534,6 @@ def test_unconnected_nodes():
         name="wind",
         input_profile=const_time_series(0.5),
         costs=1,
-        output_unit="MW",
     )
     demand = NodeFixOutput(
         name="demand",
@@ -564,7 +541,6 @@ def test_unconnected_nodes():
         input_commodities="electricity",
         output_flow=const_time_series(5.0),
         costs=0,
-        output_unit="MW",
     )
 
     # is the order of components deterministic here? would need to know how networkx checks it, but
@@ -582,14 +558,12 @@ def test_multiple_output_commodities_input_node():
         name="wind",
         input_profile=const_time_series(0.5),
         costs=1,
-        output_unit="MW",
     )
     light_bulb = Node(
         name="light_bulb",
         inputs=[wind],
         input_commodities=["electricity"],
         costs=0,
-        output_unit="MW",
         size_commodity="electricity",
     )
     hair_dryer = Node(
@@ -597,7 +571,6 @@ def test_multiple_output_commodities_input_node():
         inputs=[wind],
         input_commodities=["air"],  # this is a mistake on purpose
         costs=0,
-        output_unit="MW",
         size_commodity="air",
     )
 
@@ -613,7 +586,6 @@ def test_node_with_same_name():
         name="wind",
         input_profile=const_time_series(0.5),
         costs=1,
-        output_unit="MW",
     )
     demand = NodeFixOutput(
         name="wind",  # here is a simulated bug! should be "demand"
@@ -621,7 +593,6 @@ def test_node_with_same_name():
         input_commodities="electricity",
         output_flow=const_time_series(5.0),
         costs=0,
-        output_unit="MW",
     )
 
     with pytest.raises(ValueError, match="node names are not unique: wind, wind"):

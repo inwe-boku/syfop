@@ -12,14 +12,12 @@ class NodeBase:
         name,
         storage,
         costs,
-        output_unit,
         convert_factor=1.0,
         convert_factors=None,
     ):
         self.name = name
         self.storage = storage
         self.costs = costs
-        self.output_unit = output_unit
         self.convert_factor = convert_factor
         self.convert_factors = convert_factors
 
@@ -400,7 +398,6 @@ class NodeInputBase(NodeBase):
         name,
         input_flow,
         costs,
-        output_unit,
         output_proportions=None,
         storage=None,
     ):
@@ -413,8 +410,6 @@ class NodeInputBase(NodeBase):
             Time series of the input flow.
         costs : pint.Quantity
             Node costs per size.
-        output_unit : str
-            Unit of the output commodity.
         output_proportions : dict
             Proportions of the output flows. The keys are the names of the output commodities and
             the values are a quantity of the type of the output commodity, all multiples of these
@@ -424,7 +419,7 @@ class NodeInputBase(NodeBase):
             Storage attached to the node.
 
         """
-        super().__init__(name, storage, costs, output_unit)
+        super().__init__(name, storage, costs)
 
         self.inputs = []
 
@@ -451,7 +446,6 @@ class NodeOutputBase(NodeBase):
         input_commodities,
         output_flow,
         costs,
-        output_unit,
         input_proportions=None,
         storage=None,
     ):
@@ -471,8 +465,6 @@ class NodeOutputBase(NodeBase):
             Time series of the output flow.
         costs : pint.Quantity
             Costs per size.
-        output_unit : str
-            Unit of the output commodity.
         input_proportions : dict
             Proportions of the input flows. The keys are the names of the input commodities and the
             values are a quantity of the type of the input commodity, all multiples of these values
@@ -481,7 +473,7 @@ class NodeOutputBase(NodeBase):
             Storage attached to the node
 
         """
-        super().__init__(name, storage, costs, output_unit)
+        super().__init__(name, storage, costs)
 
         # TODO add check that inputs does not contain nodes of type NodeOutputBase?
         self.inputs = inputs

@@ -80,7 +80,6 @@ node1 = NodeScalableInput(
     name="node1",
     input_profile=random_time_series(),
     costs=10,
-    output_unit="MW",
 )
 ```
 
@@ -89,7 +88,6 @@ node2 = NodeFixInput(
     name="node2",
     costs=0,
     input_flow=random_time_series(),
-    output_unit="t",
 )
 
 ```
@@ -100,7 +98,6 @@ node3 = Node(
     inputs=[node1, node2],
     input_commodities="electricity",
     costs=42,
-    output_unit="t",
 )
 
 ```
@@ -111,7 +108,6 @@ node4 = Node(
     inputs=[node1, node2],
     input_commodities=["co2", "hydrogen"],
     costs=8,
-    output_unit="t",
     input_proportions={"node1": 0.25, "node2": 0.75},
 )
 ```
@@ -122,7 +118,6 @@ node5 = Node(
     inputs=[node2, node3],
     input_commodities="electricity",
     costs=7,
-    output_unit="t",
     storage=Storage(
         costs=200,
         max_charging_speed=0.2,

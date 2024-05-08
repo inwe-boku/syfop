@@ -8,17 +8,20 @@ from syfop.util import const_time_series
 @pytest.fixture
 def three_example_nodes():
     wind = NodeScalableInput(
-        name="wind", input_profile=const_time_series(0.5), costs=1, output_unit="MW"
+        name="wind",
+        input_profile=const_time_series(0.5),
+        costs=1,
     )
     solar_pv = NodeScalableInput(
-        name="solar_pv", input_profile=const_time_series(0.5), costs=20.0, output_unit="MW"
+        name="solar_pv",
+        input_profile=const_time_series(0.5),
+        costs=20.0,
     )
     electricity = Node(
         name="electricity",
         inputs=[solar_pv, wind],
         input_commodities="electricity",
         costs=0,
-        output_unit="MW",
     )
     return wind, solar_pv, electricity
 
@@ -41,7 +44,6 @@ def test_wrong_input_proportions_commodities(three_example_nodes):
             inputs=[solar_pv, wind],
             input_commodities=["electricity", "electricity"],
             costs=0,
-            output_unit="MW",
             # correct would be key: "electricity"
             input_proportions={"wind": 0.8 * ureg.MW, "solar_pv": 1.42 * ureg.MW},
         )
@@ -60,7 +62,6 @@ def test_wrong_number_of_commodities(three_example_nodes):
             inputs=[solar_pv, wind],
             input_commodities=["electricity"],
             costs=0,
-            output_unit="MW",
             input_proportions={"wind": 0.8, "solar_pv": 0.2},
         )
 
@@ -73,7 +74,6 @@ def test_input_profile_not_capacity_factor():
             name="wind",
             input_profile=const_time_series(1.5),
             costs=1,
-            output_unit="MW",
         )
 
     with pytest.raises(ValueError, match=error_msg):
@@ -81,7 +81,6 @@ def test_input_profile_not_capacity_factor():
             name="wind",
             input_profile=const_time_series(-0.5),
             costs=1,
-            output_unit="MW",
         )
 
 
@@ -93,5 +92,4 @@ def test_wrong_node_input():
             inputs=["solar_pv", "wind"],
             input_commodities="electricity",
             costs=0,
-            output_unit="MW",
         )
