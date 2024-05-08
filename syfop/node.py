@@ -225,8 +225,8 @@ class Node(NodeScalableBase):
 
         self.input_flow_costs = input_flow_costs
 
-    def create_constraints(self, model):
-        super().create_constraints(model)
+    def create_constraints(self, model, time_coords):
+        super().create_constraints(model, time_coords)
 
         # constraint: output_flows are limited by the size of technology in each timestamp
         # Note: this is not needed for NodeScalableInput and NodeScalableOutput because there the

@@ -7,7 +7,7 @@ import pandas as pd
 from networkx.drawing.nx_agraph import graphviz_layout
 
 from syfop.node_base import NodeInputBase, NodeOutputBase
-from syfop.units import default_units, interval_length, ureg
+from syfop.units import default_units, interval_length_h, ureg
 from syfop.util import DEFAULT_NUM_TIME_STEPS, timeseries_variable
 
 
@@ -263,7 +263,7 @@ class Network:
         self._add_leaf_flow_variables(model, nodes)
 
         for node in nodes:
-            node.create_constraints(model)
+            node.create_constraints(model, self.time_coords)
 
         model.add_objective(self.total_costs())
 
@@ -376,7 +376,7 @@ class Network:
             # would need to strip units here and use the magnitude.
             assert isinstance(input_flows[0], linopy.Variable), "unexpected input_flow type"
 
-            interval_length_h = interval_length(self.time_coords).to(ureg.h).magnitude
+            interval_length_h_ = interval_length_h(self.time_coords)
 
             input_flow_unit = self.units[node.input_commodities[0]]  # something like MW
             input_flow_costs_mag = node.input_flow_costs.to(
@@ -384,7 +384,7 @@ class Network:
             ).magnitude
 
             # something like: EUR/MWh * x h * MW
-            costs = costs + input_flow_costs_mag * interval_length_h * input_flow.sum()
+            costs = costs + input_flow_costs_mag * interval_length_h_ * input_flow.sum()
 
         costs = costs + storage_costs
 

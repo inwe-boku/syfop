@@ -1,6 +1,6 @@
 import linopy
 
-from syfop.units import interval_length, strip_unit, ureg
+from syfop.units import interval_length_h, strip_unit, ureg
 from syfop.util import timeseries_variable
 
 
@@ -156,17 +156,7 @@ class NodeBase:
                 name=f"proportion_{self.name}_{commodity}",
             )
 
-    def _interval_length_h(self):
-        # XXX refactor: pass time_coords as parameter similar to create_variables
-        #
-        # this trusts on the check in Network that all time_coords are identical
-        # also assumes that there is at list one input flow (which is always the case, right?)
-        first_input_flow = list(self.input_flows.values())[0]
-        time_coords = first_input_flow.coords["time"]
-        interval_length_h = interval_length(time_coords).to(ureg.h).magnitude
-        return interval_length_h
-
-    def _create_storage_constraints(self, model):
+    def _create_storage_constraints(self, model, time_coords):
         """This method is not supposed to be called if the node does not have a storage."""
         size = self.storage.size
         level = self.storage.level
@@ -174,7 +164,7 @@ class NodeBase:
         discharge = self.storage.discharge
 
         max_charging_per_timestamp = (
-            size * self._interval_length_h() * self.storage.max_charging_speed
+            size * interval_length_h(time_coords) * self.storage.max_charging_speed
         )
         model.add_constraints(
             charge - max_charging_per_timestamp <= 0,
@@ -229,7 +219,7 @@ class NodeBase:
 
         return convert_factors
 
-    def _create_constraint_inout_flow_balance(self, model):
+    def _create_constraint_inout_flow_balance(self, model, time_coords):
         """Add a constraint for each output commodity:
 
             sum of input flows == convert_factor * sum of output flows
@@ -279,6 +269,7 @@ class NodeBase:
                 input_flows_mag,
                 output_flows_mag,
                 convert_factor_mag,
+                time_coords,
             )
 
     def _create_constraint_inout_flow_balance_commodity(
@@ -287,6 +278,7 @@ class NodeBase:
         input_flows_mag,
         output_flows_mag,
         convert_factor_mag,
+        time_coords,
     ):
         """Add a constraint to the model:
 
@@ -333,7 +325,7 @@ class NodeBase:
 
         if self.storage is not None:
             # no need for unit conversion, Example: charge and discharge are MWh and lhs in MW
-            lhs = lhs + 1 / self._interval_length_h() * (
+            lhs = lhs + 1 / interval_length_h(time_coords) * (
                 self.storage.charge - self.storage.discharge
             )
 
@@ -345,11 +337,11 @@ class NodeBase:
         if self.storage is not None:
             self._create_storage_variables(model, time_coords)
 
-    def create_constraints(self, model):
-        self._create_constraint_inout_flow_balance(model)
+    def create_constraints(self, model, time_coords):
+        self._create_constraint_inout_flow_balance(model, time_coords)
 
         if self.storage is not None:
-            self._create_storage_constraints(model)
+            self._create_storage_constraints(model, time_coords)
 
         # constraint: proportion of inputs
         if self.input_proportions is not None:
