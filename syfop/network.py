@@ -52,6 +52,7 @@ class Network:
         time_coords_year=2020,
         total_cost_unit=ureg.EUR,
         solver_dir=None,
+        units={},
     ):
         """Create a network of nodes.
 
@@ -67,8 +68,8 @@ class Network:
         time_coords_freq : str
             used only if ``time_coords`` is ``None``, frequency of the time coordinates
         time_coords_num : int
-            used only if ``time_coords`` is ``None``, number of time stamps generated.
-            Note that the default value might be wrong in case of a leap year.
+            used only if ``time_coords`` is ``None``, number of time stamps generated. Note that
+            the default value might be wrong in case of a leap year.
         time_coords_year : int
             used only if ``time_coords`` is ``None``, year used for generating time stamps (first
             hour of this year will be used for the first time stamp)
@@ -79,6 +80,10 @@ class Network:
             used as workaround on the `VSC <https://vsc.ac.at>`__, because the default temp folder
             is on a partition with very limited space and deleting the files after the optimization
             does not work (always?).
+        units : dict
+            A mapping from commodity to unit, e.g. ``{"electricity": ureg.MW}``. This overwrites
+            the default units in :py:mod:`syfop.units.default_units`. Required for commodities,
+            which are not defined in :py:mod:`syfop.units.default_units`.
 
         """
         if len(nodes) == 0:
@@ -106,6 +111,11 @@ class Network:
         self.time_coords = time_coords
 
         self.total_cost_unit = total_cost_unit
+
+        # XXX this is quite dangerous and ugly: modifying a global variable may have weird side
+        # effects if one wants to have different networks with different units in the same python
+        # process...
+        default_units.update(units)
 
         self._check_consistent_time_coords(nodes, time_coords)
         self._check_all_nodes_connected(nodes)

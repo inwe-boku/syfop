@@ -440,7 +440,13 @@ def test_hot_chocolate(with_curtailment):
 
         nodes.append(milk_curtailment)
 
-    network = Network(nodes, time_coords_num=time_coords_num)
+    units = {
+        "milk": ureg.l / ureg.h,
+        "cacao": ureg.g / ureg.h,
+        "hot_chocolate": ureg.l / ureg.h,
+    }
+
+    network = Network(nodes, time_coords_num=time_coords_num, units=units)
 
     network.optimize(default_solver)
 
