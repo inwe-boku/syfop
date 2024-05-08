@@ -45,12 +45,19 @@ repository:
 
     pip install git+https://github.com/inwe-boku/syfop
 
-The solver HiGHs is installed automatically . Other [solvers](https://linopy.readthedocs.io/en/latest/solvers.html) are supported too, but not installed automatically.
+The solver [HiGHs](https://highs.dev/) is installed automatically . Other
+[solvers](https://linopy.readthedocs.io/en/latest/solvers.html) are supported too, but not
+installed automatically.
 
-To install development requirements run:
+For development we recommend to run:
 
     pip install -e 'syfop[test,dev] @ git+https://github.com/inwe-boku/syfop'
     pre-commit install
+
+
+Precise versions of all dependencies, which have been tested, can be found in the
+[conda-env.yml](https://github.com/inwe-boku/syfop-global-costs/blob/main/conda-env.yml) file in the
+[syfop-global-costs](https://github.com/inwe-boku/syfop-global-costs/) repository.
 
 <!--
 To install Gurobiy:
