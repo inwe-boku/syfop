@@ -110,20 +110,25 @@ class Network:
             )
         self.time_coords = time_coords
 
+        self.nodes = nodes
+        self.nodes_dict = {node.name: node for node in nodes}
+
         self.total_cost_unit = total_cost_unit
 
-        # XXX this is quite dangerous and ugly: modifying a global variable may have weird side
-        # effects if one wants to have different networks with different units in the same python
-        # process...
-        default_units.update(units)
+        self._set_units(units)
 
         self._check_consistent_time_coords(nodes, time_coords)
         self._check_all_nodes_connected(nodes)
 
-        self.nodes = nodes
-        self.nodes_dict = {node.name: node for node in nodes}
-
         self.model = self._generate_optimization_model(nodes, solver_dir)
+
+    def _set_units(self, units):
+        self.units = default_units.copy()
+        self.units.update(units)
+
+        # if units is never modified later on, this should be okay to allow nodes to access units
+        for node in self.nodes:
+            node.units = self.units
 
     def _check_all_nodes_connected(self, nodes):
         """Check if graph of node forms a connected network."""
@@ -373,7 +378,7 @@ class Network:
 
             interval_length_h = interval_length(self.time_coords).to(ureg.h).magnitude
 
-            input_flow_unit = default_units[node.input_commodities[0]]  # something like MW
+            input_flow_unit = self.units[node.input_commodities[0]]  # something like MW
             input_flow_costs_mag = node.input_flow_costs.to(
                 self.total_cost_unit / (input_flow_unit * ureg.h)
             ).magnitude

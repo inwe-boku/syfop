@@ -1,6 +1,6 @@
 import linopy
 
-from syfop.units import default_units, interval_length, strip_unit, ureg
+from syfop.units import interval_length, strip_unit, ureg
 from syfop.util import timeseries_variable
 
 
@@ -27,6 +27,7 @@ class NodeBase:
         self.outputs = None
         self.output_flows = None
         self._size_commodity = None
+        self.units = None
 
         # overwritten in some subclasses
         self.input_commodities = None
@@ -141,18 +142,19 @@ class NodeBase:
         reference_commodity, reference_proportion = proportions.popitem()
 
         flows_reference_mag = [
-            strip_unit(flow, reference_commodity) for flow in get_flows(reference_commodity)
+            strip_unit(flow, reference_commodity, self.units)
+            for flow in get_flows(reference_commodity)
         ]
 
         for commodity, proportion in proportions.items():
             # XXX minor code duplication, search for strip_unit() in this file
-            flows_mag = [strip_unit(flow, commodity) for flow in get_flows(commodity)]
+            flows_mag = [strip_unit(flow, commodity, self.units) for flow in get_flows(commodity)]
 
             model.add_constraints(
                 1
-                / strip_unit(reference_proportion, reference_commodity)
+                / strip_unit(reference_proportion, reference_commodity, self.units)
                 * sum(flows_reference_mag)
-                == 1 / strip_unit(proportion, commodity) * sum(flows_mag),
+                == 1 / strip_unit(proportion, commodity, self.units) * sum(flows_mag),
                 name=f"proportion_{self.name}_{commodity}",
             )
 
@@ -255,15 +257,10 @@ class NodeBase:
             # converts from float to pint.Quantity or from pint.Quantity to pint.Quantity
             convert_factor = convert_factor * ureg.dimensionless * 1.0
 
-            # by passing it to ureg.Unit() we allow strings as input for default_units
+            # by passing it to ureg.Unit() we allow strings as input for units
             convert_factor_mag = convert_factor.to(
-                ureg.Unit(default_units[output_commodity])
-                / ureg.Unit(default_units[input_commodity])
+                ureg.Unit(self.units[output_commodity]) / ureg.Unit(self.units[input_commodity])
             ).magnitude
-
-            # TODO we should support commodities not defined in units.default_units and maybe also
-            # allow the user to overwrite the default units. Should this be done via a parameter
-            # for Node or Network?
 
             # strip unit from fixed time series and leave linopy variables unchanged: since linopy
             # does not support pint objects, we need to strip the unit, i.e. pass the magnitude
@@ -271,11 +268,11 @@ class NodeBase:
             # adding this is beyond the scope of this project and it is unclear if it would be
             # accepted upstream in linopy.
             input_flows_mag = [
-                strip_unit(input_flow, input_commodity)
+                strip_unit(input_flow, input_commodity, self.units)
                 for input_flow in self._get_input_flows(input_commodity)
             ]
             output_flows_mag = [
-                strip_unit(output_flow, output_commodity)
+                strip_unit(output_flow, output_commodity, self.units)
                 for output_flow in self._get_output_flows(output_commodity)
             ]
 
@@ -370,7 +367,7 @@ class NodeBase:
 
     def storage_cost_magnitude(self, currency_unit):
         assert hasattr(self, "storage") and self.storage is not None, "node has no storage"
-        storage_unit = default_units[self.size_commodity]
+        storage_unit = self.units[self.size_commodity]
         return self.storage.costs.to(currency_unit / (storage_unit * ureg.h)).magnitude
 
 
@@ -381,7 +378,7 @@ class NodeScalableBase(NodeBase):
     def costs_magnitude(self, currency_unit):
         """Returns the costs scaled to ``currency_unit`` / ``size_unit``, where ``size_unit`` is
         the unit of the output commodity."""
-        size_unit = default_units[self.size_commodity]
+        size_unit = self.units[self.size_commodity]
         costs_mag = self.costs.to(currency_unit / size_unit).magnitude
         return costs_mag
 

@@ -27,7 +27,7 @@ def is_pintxarray(x):
     return hasattr(x, "pint")
 
 
-def strip_unit(x, commodity):
+def strip_unit(x, commodity, units):
     """Strip unit from x and return magnitude scaled to the default unit for magnitude.
 
     Parameters
@@ -36,6 +36,8 @@ def strip_unit(x, commodity):
         xarray object with unit or any other object.
     commodity : str
         Commodity name.
+    units : dict
+        A mapping of commodity names to units.
 
     Returns
     -------
@@ -44,10 +46,10 @@ def strip_unit(x, commodity):
 
     """
     if is_pintxarray(x):
-        commodity_unit = default_units[commodity]
+        commodity_unit = units[commodity]
         return x.pint.to(commodity_unit).pint.magnitude
     elif isinstance(x, pint.Quantity):
-        return x.to(default_units[commodity]).magnitude
+        return x.to(units[commodity]).magnitude
     else:
         return x
 
