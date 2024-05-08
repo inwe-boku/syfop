@@ -329,7 +329,10 @@ class Storage:
         but it is not forbidden in any way. However, such a case will not be optimal if
         ``charging_loss>0``.
 
-    **Note:** The units of the variables ``size``, ``level``, ``charge`` and ``discharge`` are
+    Note
+    ----
+
+    The units of the variables ``size``, ``level``, ``charge`` and ``discharge`` are
     given by the unit of the commodity times hours (independently of the interval size between time
     stamps). This means for a battery, the variables will be given in `MWh` if the unit for
     'electricity' is set to `MW`. This means that the values in ``charge`` and ``discharge`` depend
@@ -337,8 +340,6 @@ class Storage:
 
     """
 
-    # Note: atm this is not implemented as node class. Probably could be done, but might be more
-    # complicated to be implemented
     def __init__(self, costs, max_charging_speed, storage_loss, charging_loss):
         """
         Parameters

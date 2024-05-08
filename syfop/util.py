@@ -12,8 +12,8 @@ def const_time_series(
     time_coords_num=DEFAULT_NUM_TIME_STEPS,
     time_coords_year=2020,
 ):
-    """Creates a constant time series as DataArray. The time coordinates will be created from
-    parameters if not given.
+    """Creates a constant time series as :py:class:`xarray.DataArray`. The time coordinates will be
+    created from parameters if not given.
 
     Parameters
     ----------
@@ -33,7 +33,7 @@ def const_time_series(
 
     Returns
     -------
-    xr.DataArray
+    xarray.DataArray
 
     """
     if time_coords is None:
@@ -51,7 +51,7 @@ def const_time_series(
 
 
 def timeseries_variable(model, time_coords, name):
-    """Create a non-negative variable for a ``linopy.Model`` with time coordinates.
+    """Create a non-negative variable for a :py:class:`linopy.model.Model` with time coordinates.
 
     Parameters
     ----------
@@ -64,8 +64,9 @@ def timeseries_variable(model, time_coords, name):
 
     Returns
     -------
-    linopy.Variable
+    linopy.variables.Variable
         The created variable.
+
     """
     return model.add_variables(
         name=name,
@@ -92,7 +93,7 @@ def random_time_series(
 
     Returns
     -------
-    xr.DataArray
+    xarray.DataArray
         A random time series between 0 and 1 with given time coordinates.
     """
     # let's make it deterministic, way better for debugging test cases!
