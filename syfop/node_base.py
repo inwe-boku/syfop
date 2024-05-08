@@ -479,8 +479,7 @@ class NodeOutputBase(NodeBase):
         ), f"unexpected number of input_commodities for node '{self.name}'"
         self.output_commodities = [self.input_commodities[0]]
 
-        # FIXME why not "" as key instead of name?
-        self.output_flows = {name: output_flow}
+        self.output_flows = {"": output_flow}
 
         self._check_proportions_valid(input_proportions, self.input_commodities, "input")
         self.input_proportions = input_proportions
