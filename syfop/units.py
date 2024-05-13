@@ -12,7 +12,6 @@ default_units = {
     "electricity": ureg.MW,
     "co2": ureg.t / ureg.h,
     "hydrogen": ureg.t / ureg.h,
-    "gas": ureg.MW,
     "methanol": ureg.t / ureg.h,
 }
 

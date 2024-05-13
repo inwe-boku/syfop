@@ -247,7 +247,10 @@ def test_no_input_node(input_flow_costs):
         input_commodities="electricity",
         output_flow=const_time_series(5.0, time_coords_num=time_coords_num) * ureg.MW,
     )
-    network = Network([gas, demand], time_coords_num=time_coords_num)
+    units = {
+        "gas": ureg.MW,
+    }
+    network = Network([gas, demand], time_coords_num=time_coords_num, units=units)
     network.optimize(default_solver)
 
     np.testing.assert_array_almost_equal(network.model.solution.input_flow_gas, 5.0)
