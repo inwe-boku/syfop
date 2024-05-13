@@ -222,7 +222,7 @@ class NodeBase:
     def _create_constraint_inout_flow_balance(self, model, time_coords):
         """Add a constraint for each output commodity:
 
-            sum of input flows == convert_factor * sum of output flows
+            sum of output flows == convert_factor * sum of input flows
 
         in each time step. Input flows are here only for the input commodity for which the
         convert_factor is defined in convert_factors"""
@@ -284,7 +284,7 @@ class NodeBase:
     ):
         """Add a constraint to the model:
 
-            sum of input flows == convert_factor * sum of output flows
+            sum of output flows == convert_factor * sum of input flows
 
         in each time step for a list of input and output flows and a certain convert_factor. This
         method is intended to be used for all input and output flows of one input and one output
