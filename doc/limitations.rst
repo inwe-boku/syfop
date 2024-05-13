@@ -27,7 +27,7 @@ current version of *syfop*.
 CHP power plants
 ----------------
 
-The node parameters ``input_proportions`` and ``output_proportions`` are predefined and fixed
+The node parameters ``input_proportions`` and ``convert_factors`` are predefined and fixed
 values. However, to model a CHP power plant the proportions between heat and electricity output
 need to be modeled as optimization variables. This is not supported in the current version of
 *syfop*. (One might be able to implment such a model using custom constraints and variables without

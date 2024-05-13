@@ -31,7 +31,6 @@ class NodeBase:
         self.input_commodities = None
         self.output_commodities = None
         self.input_proportions = None
-        self.output_proportions = None
 
     def _preprocess_input_commodities(self, inputs, input_commodities):
         if not all(isinstance(node, NodeBase) for node in inputs):
@@ -52,13 +51,13 @@ class NodeBase:
 
         return input_commodities
 
-    def _check_proportions_valid(self, proportions, commodities, input_or_output):
+    def _check_input_proportions_valid(self, input_proportions, input_commodities):
         """Raise an error if invalid proportions are provided."""
-        if proportions is not None:
-            assert proportions.keys() == set(commodities), (
-                f"wrong parameter for node {self.name}: {input_or_output}_proportions needs to be"
-                f" a dict with keys matching names of {input_or_output}_commodities: "
-                f"{set(commodities)}"
+        if input_proportions is not None:
+            assert input_proportions.keys() == set(input_commodities), (
+                f"wrong parameter for node {self.name}: input_proportions needs to be"
+                f" a dict with keys matching names of input_commodities: "
+                f"{set(input_commodities)}"
             )
 
     @property
@@ -135,18 +134,21 @@ class NodeBase:
             model, time_coords, f"storage_discharge_{self.name}"
         )
 
-    def _create_proportion_constraints(self, model, proportions, get_flows):
-        proportions = proportions.copy()
-        reference_commodity, reference_proportion = proportions.popitem()
+    def _create_input_proportions_constraint(self, model, input_proportions):
+        input_proportions = input_proportions.copy()
+        reference_commodity, reference_proportion = input_proportions.popitem()
 
         flows_reference_mag = [
             strip_unit(flow, reference_commodity, self.units)
-            for flow in get_flows(reference_commodity)
+            for flow in self._get_input_flows(reference_commodity)
         ]
 
-        for commodity, proportion in proportions.items():
+        for commodity, proportion in input_proportions.items():
             # XXX minor code duplication, search for strip_unit() in this file
-            flows_mag = [strip_unit(flow, commodity, self.units) for flow in get_flows(commodity)]
+            flows_mag = [
+                strip_unit(flow, commodity, self.units)
+                for flow in self._get_input_flows(commodity)
+            ]
 
             model.add_constraints(
                 1
@@ -347,15 +349,7 @@ class NodeBase:
 
         # constraint: proportion of inputs
         if self.input_proportions is not None:
-            self._create_proportion_constraints(
-                model, self.input_proportions, self._get_input_flows
-            )
-
-        # constraint: proportion of outputs
-        if self.output_proportions is not None:
-            self._create_proportion_constraints(
-                model, self.output_proportions, self._get_output_flows
-            )
+            self._create_input_proportions_constraint(model, self.input_proportions)
 
     def storage_cost_magnitude(self, currency_unit):
         assert hasattr(self, "storage") and self.storage is not None, "node has no storage"
@@ -387,13 +381,10 @@ class NodeInputBase(NodeBase):
 
     Do not initialize directly, use sub classes."""
 
-    def __init__(self, name, input_flow, costs, output_proportions=None, storage=None):
+    def __init__(self, name, input_flow, costs, storage=None):
         super().__init__(name, storage, costs)
 
         self.inputs = []
-
-        # validated in class Network, when every node knows it's outputs
-        self.output_proportions = output_proportions
 
         self.input_flows = {"": input_flow}
 
@@ -434,7 +425,7 @@ class NodeOutputBase(NodeBase):
 
         self.output_flows = {"": output_flow}
 
-        self._check_proportions_valid(input_proportions, self.input_commodities, "input")
+        self._check_input_proportions_valid(input_proportions, self.input_commodities)
         self.input_proportions = input_proportions
 
         if storage is not None:

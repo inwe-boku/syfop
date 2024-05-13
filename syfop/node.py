@@ -17,7 +17,7 @@ class NodeFixInput(NodeInputBase):
 
     """
 
-    def __init__(self, name, input_flow, output_proportions=None, storage=None):
+    def __init__(self, name, input_flow, storage=None):
         """
         Parameters
         ----------
@@ -25,11 +25,6 @@ class NodeFixInput(NodeInputBase):
             Name of the node, must be unique in the network
         input_flow : xr.DataArray
             Time series of the input flow.
-        output_proportions : dict
-            Proportions of the output flows. The keys are the names of the output commodities and
-            the values are a quantity of the type of the output commodity, all multiples of these
-            values are allowed.
-            Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
         storage : Storage
             Storage attached to the node.
 
@@ -38,7 +33,6 @@ class NodeFixInput(NodeInputBase):
             name=name,
             input_flow=input_flow,
             costs=None,
-            output_proportions=output_proportions,
             storage=storage,
         )
 
@@ -119,7 +113,6 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
         name,
         input_profile,
         costs,
-        output_proportions=None,
         storage=None,
     ):
         """
@@ -131,11 +124,6 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
             Time series of the input flow. Must be capacity factors, i.e. between 0 and 1.
         costs : pint.Quantity
             Costs per unit of size.
-        output_proportions : dict
-            Proportions of the output flows. The keys are the names of the output commodities and
-            the values are a quantity of the type of the output commodity, all multiples of these
-            values are allowed.
-            Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
         storage : Storage
             Storage attached to the node.
 
@@ -151,7 +139,6 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
             name=name,
             input_flow=None,  # overwritten by create_variables()
             costs=costs,
-            output_proportions=output_proportions,
             storage=storage,
         )
         self.input_flows = None
@@ -216,7 +203,6 @@ class Node(NodeScalableBase):
         convert_factors=None,
         size_commodity=None,
         input_proportions=None,
-        output_proportions=None,
         storage=None,
         input_flow_costs=None,
     ):
@@ -248,10 +234,6 @@ class Node(NodeScalableBase):
             Proportions of the input flows. The keys are the names of the input commodities and the
             values are a quantity of the type of the input commodity, all multiples of these values
             are allowed. Example: ``{"electricity": 0.3 * ureg.MW, "co2": 2.3 * ureg.t/ureg.h}``.
-        output_proportions : dict
-            Proportions of the output flows. The keys are the names of the output commodities and
-            the values are a quantity of the type of the output commodity, all multiples of these
-            values are allowed. Example: ``{"electricity": 0.3 * ureg.MW, "heat": 2.3 * ureg.kW}``.
         storage : Storage
             Storage attached to the node.
         input_flow_costs : pint.Quantity
@@ -274,12 +256,10 @@ class Node(NodeScalableBase):
 
         self.size = None
 
-        # output_proportions are checked in Network.__init__, when we know the output commodities
-        self._check_proportions_valid(input_proportions, self.input_commodities, "input")
+        self._check_input_proportions_valid(input_proportions, self.input_commodities)
 
         self._size_commodity = size_commodity
         self.input_proportions = input_proportions
-        self.output_proportions = output_proportions
 
         self.input_flow_costs = input_flow_costs
 

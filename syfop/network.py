@@ -197,7 +197,7 @@ class Network:
         # therefore it does not need to be set explicitly by the user, but can be infered from the
         # node(s) it is connected to.
         # We need to disallow multiple output_commodities for input nodes anyhow, because there is
-        # no convert factor and no output_proportions.
+        # no convert factor.
         for node in nodes:
             if node.input_commodities is None:
                 assert (
@@ -237,10 +237,6 @@ class Network:
                 if len(node.output_commodities) == 0:
                     # here we have no ouputs of a Node, so there is only the leaf output flow
                     node.output_commodities = [node.size_commodity]
-
-                node._check_proportions_valid(
-                    node.output_proportions, node.output_commodities, "output"
-                )
 
                 if (
                     len(set(node.output_commodities)) > 1
