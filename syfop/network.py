@@ -96,6 +96,8 @@ class Network:
             )
 
         # check if names of nodes are unique
+        # TODO we might run into troubles if constraints or variables are not unique, e.g. because
+        # the name contains underscores
         node_names = [node.name for node in nodes]
         if len(set(node_names)) != len(nodes):
             raise ValueError(f"node names are not unique: {', '.join(node_names)}")

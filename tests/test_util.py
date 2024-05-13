@@ -39,35 +39,35 @@ def test_print_constraints(some_model):
 def test_constraints_to_str(some_model):
     constraints_as_str = constraints_to_str(some_model)
     expected_output = """
-inout_flow_balance_wind0:
+inout_flow_balance_wind_electricity0:
 -0.500000 * size_wind0
 +1.000000 * flow_wind_demand1
 =
 -0.000000
 
-inout_flow_balance_wind1:
+inout_flow_balance_wind_electricity1:
 -0.500000 * size_wind0
 +1.000000 * flow_wind_demand2
 =
 -0.000000
 
-inout_flow_balance_wind2:
+inout_flow_balance_wind_electricity2:
 -0.500000 * size_wind0
 +1.000000 * flow_wind_demand3
 =
 -0.000000
 
-inout_flow_balance_demand3:
+inout_flow_balance_demand_electricity3:
 +1.000000 * flow_wind_demand1
 =
 5.000000
 
-inout_flow_balance_demand4:
+inout_flow_balance_demand_electricity4:
 +1.000000 * flow_wind_demand2
 =
 5.000000
 
-inout_flow_balance_demand5:
+inout_flow_balance_demand_electricity5:
 +1.000000 * flow_wind_demand3
 =
 5.000000

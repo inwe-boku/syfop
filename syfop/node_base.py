@@ -267,6 +267,7 @@ class NodeBase:
                 input_flows_mag,
                 output_flows_mag,
                 convert_factor_mag,
+                output_commodity,
                 time_coords,
             )
 
@@ -276,6 +277,7 @@ class NodeBase:
         input_flows_mag,
         output_flows_mag,
         convert_factor_mag,
+        output_commodity,
         time_coords,
     ):
         """Add a constraint to the model:
@@ -327,7 +329,9 @@ class NodeBase:
                 self.storage.charge - self.storage.discharge
             )
 
-        model.add_constraints(lhs == rhs, name=f"inout_flow_balance_{self.name}")
+        model.add_constraints(
+            lhs == rhs, name=f"inout_flow_balance_{self.name}_{output_commodity}"
+        )
 
     def create_variables(self, model, time_coords):
         self._create_input_flows_variables(model, time_coords)
