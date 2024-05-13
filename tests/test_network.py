@@ -386,6 +386,69 @@ def test_inconsistent_time_coords(input_output, wrong_length):
         Network([wind, electricity, demand])
 
 
+@pytest.mark.parametrize("missing_size_commodity", [False, True])
+def test_multiple_commodities_chp_power_plant(missing_size_commodity):
+    time_coords_num = 10
+    chp_power_plant = Node(
+        name="chp_power_plant",
+        inputs=[],
+        input_commodities=["gas"],
+        costs=3 * ureg.EUR / ureg.MW,
+        input_flow_costs=10 * ureg.EUR / ureg.t,
+        size_commodity=None if missing_size_commodity else "electricity",
+        convert_factors={
+            "electricity": ("gas", 2 / (ureg.t / ureg.h) * ureg.MW),
+            "heat": ("gas", 4 / (ureg.t / ureg.h) * ureg.MW),
+        },
+    )
+    electricity_demand = NodeFixOutput(
+        name="electricity_demand",
+        output_flow=const_time_series(3.0 * ureg.MW, time_coords_num=time_coords_num),
+        inputs=[chp_power_plant],
+        input_commodities="electricity",
+    )
+    heat = Node(
+        name="heat",
+        inputs=[chp_power_plant],
+        input_commodities="heat",
+        costs=0,
+        size_commodity="heat",
+    )
+
+    units = {
+        "heat": ureg.MW,
+        "gas": ureg.t / ureg.h,
+    }
+
+    network_parmas = dict(
+        nodes=[chp_power_plant, electricity_demand, heat],
+        units=units,
+        time_coords_num=time_coords_num,
+    )
+
+    if missing_size_commodity:
+        # if a node has multiple ouptut commodities, size_commodity should be set
+        msg = (
+            "node 'chp_power_plant': missing size_commodity parameter, but required for "
+            "multiple different output commodities"
+        )
+        with pytest.raises(ValueError, match=msg):
+            _ = Network(**network_parmas)
+    else:
+        network = Network(**network_parmas)
+
+        network.optimize(default_solver)
+
+        # the size is 3.0 MW, because size_commodity is set to "electricity" and we need 3 MW
+        assert network.model.solution.size_chp_power_plant == 3.0
+        assert (network.model.solution.output_flow_heat == 6.0).all()
+
+        costs_chp_power_plant = 3 * 3.0
+        # 10 EUR/t, 3 MW electricity -> 1.5 t/h gas
+        costs_gas = 10 * 3.0 / 2 * time_coords_num
+        assert network.model.objective.value == costs_chp_power_plant + costs_gas
+
+
 @pytest.mark.parametrize("with_curtailment", [False, True])
 def test_hot_chocolate(with_curtailment):
     """A quite synthetic example, to test whether parameters and units are intuitive. A cow
@@ -631,3 +694,29 @@ def test_node_with_same_name():
 
     with pytest.raises(ValueError, match="node names are not unique: wind, wind"):
         Network([wind, demand])
+
+
+def test_missing_size_commodity_parameter_no_output():
+    """If a node has no ouptut nodes, size_commodity should be set."""
+    wind = NodeScalableInput(
+        name="wind",
+        input_profile=const_time_series(0.5),
+        costs=10 * ureg.MW / ureg.EUR,
+    )
+    demand = NodeFixOutput(
+        name="demand",
+        inputs=[wind],
+        input_commodities="electricity",
+        output_flow=const_time_series(5.0) * ureg.kW,
+    )
+    curtailment = Node(
+        name="curtailment",
+        inputs=[wind],
+        input_commodities="electricity",
+        costs=0,
+    )
+
+    error_msg = "node 'curtailment' has no output nodes defined, so size_commmodity must be set"
+
+    with pytest.raises(ValueError, match=error_msg):
+        Network([wind, demand, curtailment])

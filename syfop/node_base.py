@@ -73,8 +73,8 @@ class NodeBase:
                 )
             if len(set(self.output_commodities)) > 1:
                 raise ValueError(
-                    "size_commodity not provided, but required for multiple "
-                    "different output commodities"
+                    f"node '{self.name}': missing size_commodity parameter, but required for "
+                    "multiple different output commodities"
                 )
             return self.output_commodities[0]
         else:
