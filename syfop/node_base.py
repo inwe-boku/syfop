@@ -204,10 +204,8 @@ class NodeBase:
                     f"node '{self.name}': convert_factors is required for "
                     "multiple input or output commodities"
                 )
-            input_commodity = self.input_commodities[0]  # FIXME could this be None?
-            output_commodity = self.output_commodities[
-                0
-            ]  # FIXME could this be None at this point?
+            input_commodity = self.input_commodities[0]
+            output_commodity = self.output_commodities[0]
             convert_factors = {output_commodity: (input_commodity, self.convert_factor)}
         else:
             if self.convert_factor != 1.0 and self.convert_factor is not None:

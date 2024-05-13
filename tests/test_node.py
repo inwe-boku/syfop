@@ -60,6 +60,8 @@ def test_wrong_number_of_commodities(three_example_nodes):
         _ = Node(
             name="electricity",
             inputs=[solar_pv, wind],
+            # there are two input nodes, but only one commodity: a string would work or a list with
+            # two strings "electricity", but a list with one string is not allowed
             input_commodities=["electricity"],
             costs=0,
             input_proportions={"wind": 0.8, "solar_pv": 0.2},

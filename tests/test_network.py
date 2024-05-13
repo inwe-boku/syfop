@@ -259,6 +259,47 @@ def test_no_input_node(input_flow_costs):
     )
 
 
+def test_multiple_commodities_missing_convert_factors():
+    # multiple input commodities means that  convert_factors is required
+    time_coords_num = 10
+    co2 = NodeFixInput(
+        name="co2",
+        input_flow=const_time_series(5, time_coords_num=time_coords_num) * ureg.t / ureg.h,
+    )
+    electricity = Node(
+        name="electricity",
+        inputs=[],
+        input_commodities=["electricity"],
+        costs=0,
+    )
+    hydrogen = Node(
+        name="hydrogen",
+        inputs=[co2, electricity],
+        input_commodities=["co2", "electricity"],
+        costs=3 * ureg.EUR / (ureg.t / ureg.h),
+        size_commodity="hydrogen",
+    )
+    msg = "node 'hydrogen': convert_factors is required for multiple input or output commodities"
+    with pytest.raises(ValueError, match=msg):
+        Network([co2, electricity, hydrogen], time_coords_num=time_coords_num)
+
+
+def test_convert_factor_and_convert_factors_not_allowed():
+    electricity = Node(
+        name="electricity",
+        inputs=[],
+        input_commodities="electricity",
+        costs=0,
+        size_commodity="electricity",
+        # 0.5 does not really make sense... but it's good enough for testing this error here
+        convert_factor=0.5,
+        convert_factors={"electricity": ("electricity", 0.5)},
+    )
+    msg = "node 'electricity': convert_factors is only allowed if convert_factor is 1.0 or None"
+    with pytest.raises(ValueError, match=msg):
+        _ = Network([electricity])
+
+
 def test_no_output_node():
     time_coords_num = 10
     wind = NodeFixInput(
