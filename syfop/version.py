@@ -9,6 +9,7 @@ def get_version():
     #  - if it is a shallow clone  with --depth 1
     try:
         git_tag = subprocess.check_output(["git", "describe", "--tags"], stderr=subprocess.STDOUT)
+        git_tag = git_tag.decode().strip()
     except subprocess.CalledProcessError:
         # TODO I'm giving up on this one. No idea how to do it the right way.
         # readthedocs fails to get the tag if it is more than 50 commits away from HEAD...
@@ -17,7 +18,6 @@ def get_version():
         # raise RuntimeError(f"Unable to get version from Git: {e}: {e.output.decode()}")
 
     # TODO we don't check if the tag is a valid version string (e.g. v0.1.0).
-    git_tag = git_tag.decode().strip()
     version = git_tag.lstrip("v")
 
     # convert string from git-describe to a valid PEP440 version string
