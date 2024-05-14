@@ -1,6 +1,12 @@
 import pytest
 
-from syfop.node import Node, NodeScalableInput
+from syfop.node import (
+    Node,
+    NodeFixOutput,
+    NodeScalableInput,
+    NodeScalableOutput,
+    Storage,
+)
 from syfop.units import ureg
 from syfop.util import const_time_series
 
@@ -94,4 +100,30 @@ def test_wrong_node_input():
             inputs=["solar_pv", "wind"],
             input_commodities="electricity",
             costs=0,
+        )
+
+
+def test_scalable_output_not_implemented():
+    # this unit test is a bit useless, but it increases coverage
+    error_msg = "NodeScalableOutput is not implemented yet"
+    with pytest.raises(NotImplementedError, match=error_msg):
+        NodeScalableOutput()
+
+
+def test_storage_forbidden_for_output_nodes():
+    storage = Storage(
+        costs=10 * ureg.EUR / ureg.MWh,
+        max_charging_speed=1.0,
+        storage_loss=0.0,
+        charging_loss=0.0,
+    )
+
+    error_msg = "storage is not supported for output nodes"
+    with pytest.raises(NotImplementedError, match=error_msg):
+        _ = NodeFixOutput(
+            name="demand",
+            inputs=[],
+            input_commodities="electricity",
+            output_flow=const_time_series(5.0) * ureg.kW,
+            storage=storage,
         )

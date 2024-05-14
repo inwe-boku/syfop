@@ -386,20 +386,27 @@ def test_inconsistent_time_coords(input_output, wrong_length):
         Network([wind, electricity, demand])
 
 
-@pytest.mark.parametrize("missing_size_commodity", [False, True])
-def test_multiple_commodities_chp_power_plant(missing_size_commodity):
+@pytest.mark.parametrize("error", [None, "missing_size_commodity", "storage_not_allowed"])
+def test_multiple_commodities_chp_power_plant(error):
     time_coords_num = 10
+    storage = Storage(
+        costs=10 * ureg.EUR / ureg.MWh,
+        max_charging_speed=0.1,
+        storage_loss=0.1,
+        charging_loss=0.0,
+    )
     chp_power_plant = Node(
         name="chp_power_plant",
         inputs=[],
         input_commodities=["gas"],
         costs=3 * ureg.EUR / ureg.MW,
         input_flow_costs=10 * ureg.EUR / ureg.t,
-        size_commodity=None if missing_size_commodity else "electricity",
+        size_commodity=None if error == "missing_size_commodity" else "electricity",
         convert_factors={
             "electricity": ("gas", 2 / (ureg.t / ureg.h) * ureg.MW),
             "heat": ("gas", 4 / (ureg.t / ureg.h) * ureg.MW),
         },
+        storage=storage if error == "storage_not_allowed" else None,
     )
     electricity_demand = NodeFixOutput(
         name="electricity_demand",
@@ -426,12 +433,16 @@ def test_multiple_commodities_chp_power_plant(missing_size_commodity):
         time_coords_num=time_coords_num,
     )
 
-    if missing_size_commodity:
+    if error == "missing_size_commodity":
         # if a node has multiple ouptut commodities, size_commodity should be set
         msg = (
             "node 'chp_power_plant': missing size_commodity parameter, but required for "
             "multiple different output commodities"
         )
+        with pytest.raises(ValueError, match=msg):
+            _ = Network(**network_parmas)
+    elif error == "storage_not_allowed":
+        msg = "storage not supported for multiple output commodities"
         with pytest.raises(ValueError, match=msg):
             _ = Network(**network_parmas)
     else:
