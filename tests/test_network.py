@@ -205,11 +205,10 @@ def test_simple_co2_storage(storage_type):
 def test_missing_node():
     """If a node is used as input but not passed to the Network constructor, this is an error.
     This might change in future."""
-    wind = Node(
+    wind = NodeScalableInput(
         name="wind",
-        inputs=[],
-        input_commodities=[],
-        costs=10,
+        input_profile=const_time_series(0.5),
+        costs=1 * ureg.EUR / ureg.MW,
     )
     electricity = Node(
         name="electricity",
@@ -731,3 +730,30 @@ def test_missing_size_commodity_parameter_no_output():
 
     with pytest.raises(ValueError, match=error_msg):
         Network([wind, demand, curtailment])
+
+
+def test_node_type_only():
+    # we might want to disallow time_coords without time unit, because it does not work for storage
+    # and input_flow_costs
+    time_coords = np.arange(10)
+
+    node1 = Node(
+        name="node1",
+        inputs=[],
+        input_commodities=["electricity"],
+        costs=10 * ureg.EUR / ureg.MW,
+    )
+    node2 = Node(
+        name="node2",
+        inputs=[node1],
+        input_commodities=["electricity"],
+        size_commodity="electricity",
+        costs=0,
+    )
+
+    network = Network([node1, node2], time_coords=time_coords)
+    network.optimize()
+
+    assert list(node1.input_flows.keys()) == [""]
+    assert list(node2.input_flows.keys()) == ["node1"]
+    assert network.model.solution.size_node1 == 0.0

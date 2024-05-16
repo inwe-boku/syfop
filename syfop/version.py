@@ -18,6 +18,7 @@ def get_version():
         # raise RuntimeError(f"Unable to get version from Git: {e}: {e.output.decode()}")
 
     # TODO we don't check if the tag is a valid version string (e.g. v0.1.0).
+    # TODO --match would be nice extra option for git describe above
     version = git_tag.lstrip("v")
 
     # convert string from git-describe to a valid PEP440 version string

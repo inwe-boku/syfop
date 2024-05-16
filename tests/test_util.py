@@ -1,3 +1,4 @@
+import linopy
 import numpy as np
 import pytest
 
@@ -34,6 +35,21 @@ def some_model():
 def test_print_constraints(some_model):
     # won't check stdout here, test test_constraints_to_str checks also output, should be fine
     print_constraints(some_model)
+
+
+def test_constraints_to_str_empty_constraints():
+    model = linopy.Model()
+    constraints_as_str = constraints_to_str(model)
+    assert constraints_as_str == ""
+
+
+def test_constraints_to_str_empty_vars():
+    # this is a very stupid test to increase coverage to 100% :)
+    model = linopy.Model()
+    var = model.add_variables(name="some_var", lower=[])
+    model.add_constraints(var == 0)
+    constraints_as_str = constraints_to_str(model)
+    assert constraints_as_str == ""
 
 
 def test_constraints_to_str(some_model):

@@ -36,17 +36,18 @@ class NodeBase:
         if not all(isinstance(node, NodeBase) for node in inputs):
             raise ValueError("inputs must be of type NodeBase or some subclass")
 
+        # some nodes don't have inputs, because nothing is connected to it, but we still need
+        # one input commodity (and an input flow). that means we require one input_commmodity if
+        # there are inputs and otherwise lengths should match up.
+        num_input_commodities = max(1, len(inputs))
+
         if isinstance(input_commodities, str):
-            # some nodes don't have inputs, because nothing is connected to it, but we still need
-            # an input commodity (and an input flow)
-            input_commodities = max(1, len(inputs)) * [input_commodities]
-        elif len(inputs) != len(input_commodities) and not (
-            len(inputs) == 0 and len(input_commodities) == 1
-        ):
+            input_commodities = num_input_commodities * [input_commodities]
+        elif num_input_commodities != len(input_commodities):
             raise ValueError(
                 f"invalid number of input_commodities provided for node '{self.name}': "
                 f"{input_commodities}, does not match number of inputs: "
-                f"{', '.join(input_.name for input_ in inputs)}"
+                f"{list(input_.name for input_ in inputs)}"
             )
 
         return input_commodities
@@ -85,12 +86,12 @@ class NodeBase:
 
     def _get_flows(self, direction, flows, attached_nodes, commodities, commodity):
         if len(attached_nodes) == 0:
-            if commodities != [commodity]:
-                raise ValueError(
-                    f"node '{self.name}' has no {direction} nodes, therefore "
-                    f"{direction}_commidities should be set to '{[commodity]}', "
-                    f"but it is: {commodities} "
-                )
+            # this should never happen... we check this ear
+            assert commodities == [commodity], (
+                f"node '{self.name}' has no {direction} nodes, therefore "
+                f"{direction}_commidities should be set to '{[commodity]}', "
+                f"but it is: {commodities} "
+            )
             return flows.values()
         else:
             return (
@@ -313,13 +314,14 @@ class NodeBase:
         # operator properly in linopy if lhs is an xarray object in lhs == rhs?
         #
         if not isinstance(lhs, linopy.Variable) and not isinstance(lhs, linopy.LinearExpression):
-            if self.storage is not None:
-                # lhs means that sum of output flow nodes is not a variable, which means that we
-                # have a self is of type NodeFixOutput. then storage doesn't really make
-                # sense, so we can simply forbid this case.
-                # If we want to support it, we need to take care of a wrong sign when adding charge
-                # and discharge below to lhs.
-                raise RuntimeError("NodeFixOutput with Storage not supported")
+            # lhs means that sum of output flow nodes is not a variable, which means that we
+            # have a self is of type NodeFixOutput. then storage doesn't really make
+            # sense, so we can simply forbid this case.
+            # If we want to support it, we need to take care of a wrong sign when adding charge
+            # and discharge below to lhs.
+            # This already checked in NodeFixOutput.__init__().
+            assert self.storage is None, "NodeFixOutput with Storage not supported"
+
             lhs, rhs = rhs, lhs
         if isinstance(rhs, linopy.Variable) or isinstance(rhs, linopy.LinearExpression):
             lhs = lhs - rhs

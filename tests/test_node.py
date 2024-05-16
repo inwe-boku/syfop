@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from syfop.node import (
@@ -55,13 +57,15 @@ def test_wrong_input_proportions_commodities(three_example_nodes):
         )
 
 
-def test_wrong_number_of_commodities(three_example_nodes):
+def test_invalid_num_input_commodities1(three_example_nodes):
     wind, solar_pv, _ = three_example_nodes
 
     error_msg = (
         "invalid number of input_commodities provided for node 'electricity': "
-        "\\['electricity'\\], does not match number of inputs: solar_pv, wind"
+        "['electricity'], does not match number of inputs: ['solar_pv', 'wind']"
     )
+    error_msg = re.escape(error_msg)
+
     with pytest.raises(ValueError, match=error_msg):
         _ = Node(
             name="electricity",
@@ -71,6 +75,20 @@ def test_wrong_number_of_commodities(three_example_nodes):
             input_commodities=["electricity"],
             costs=0,
             input_proportions={"wind": 0.8, "solar_pv": 0.2},
+        )
+
+
+def test_invalid_num_input_commodities2():
+    error_msg = (
+        "invalid number of input_commodities provided for node 'gas': "
+        "[], does not match number of inputs: []"
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        _ = Node(
+            name="gas",
+            inputs=[],
+            input_commodities=[],
+            costs=0,
         )
 
 
