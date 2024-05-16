@@ -6,7 +6,8 @@ syfop - Synthetic fuel optimizer
     :hidden:
     :titlesonly:
 
-    installation
+    how-to-install
+    how-to-use
     limitations
     api_reference/index
 
@@ -16,6 +17,7 @@ syfop - Synthetic fuel optimizer
 
 
 `syfop` allows the user to model a network, where commodities run through nodes representing
-certain types of technologies. In a second step, sizes of the nodes are optimized to be cost
-optimal with respect to constraints introduced by the network. The optimization uses discrete time
-series for all nodes on as pre-specified time interval.
+certain types of technologies. Such a network is used to generate a linear optimization problem,
+which is solved to find the optimal sizes of the nodes such that the total cost of the network is
+minimized. The optimization uses discrete time series for all nodes on as pre-specified time
+interval.

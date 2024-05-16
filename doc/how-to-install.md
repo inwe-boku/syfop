@@ -1,5 +1,5 @@
-Installation
-============
+How to install
+==============
 
 At the moment there is no package built for syfop, but it can be installed via pip directly from the
 repository:

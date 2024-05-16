@@ -31,11 +31,6 @@ other commodities and transmitted to other nodes. This means that the sum of all
 equal all outputs in every time step. The conversion is defined linearly using a conversion factor.
 
 
-Example(s)
-----------
-
-see [demo.ipynb](notebooks/demo.ipynb)
-
 
 How to install
 --------------
@@ -44,76 +39,13 @@ Via pip:
 
     pip install git+https://github.com/inwe-boku/syfop
 
-See [documentation](https://syfop.readthedocs.io/latest/installation.html) for more details.
+See [documentation](https://syfop.readthedocs.io/latest/how-to-install.html) for more details.
 
 
 How to use
 ----------
 
 
-```python
-node1 = NodeScalableInput(
-    name="node1",
-    input_profile=random_time_series(),
-    costs=10,
-)
-```
-
-```python
-node2 = NodeFixInput(
-    name="node2",
-    costs=0,
-    input_flow=random_time_series(),
-)
-
-```
-
-```python
-node3 = Node(
-    name="node3",
-    inputs=[node1, node2],
-    input_commodities="electricity",
-    costs=42,
-)
-
-```
-
-```python
-node4 = Node(
-    name="node4",
-    inputs=[node1, node2],
-    input_commodities=["co2", "hydrogen"],
-    costs=8,
-    input_proportions={"node1": 0.25, "node2": 0.75},
-)
-```
-
-```python
-node5 = Node(
-    name="node5",
-    inputs=[node2, node3],
-    input_commodities="electricity",
-    costs=7,
-    storage=Storage(
-        costs=200,
-        max_charging_speed=0.2,
-        storage_loss=0.0,
-        charging_loss=0.001
-    ),
-)
-```
-
-```python
-network = Network(
-    [
-        node1,
-        node2,
-        node3,
-        node4,
-        node5,
-    ]
-)
-```
 
 
 Acknowledgements
