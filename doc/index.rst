@@ -8,6 +8,7 @@ syfop - Synthetic fuel optimizer
 
     how-to-install
     how-to-use
+    optimization-model
     limitations
     api_reference/index
 
