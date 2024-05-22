@@ -9,26 +9,11 @@
 [![Documentation Status](https://readthedocs.org/projects/syfop/badge/?version=latest)](https://syfop.readthedocs.io/)
 
 
-`syfop` allows the user to model a network, where commodities run through nodes representing
-certain types of technologies. In a second step, sizes of the nodes are optimized to be cost
-optimal with respect to constraints introduced by the network. The optimization uses discrete time
-series for all nodes on as pre-specified time interval.
-
-A simple example for such a network consists of only two nodes. The first node represents a wind
-park, where an hourly electricity generation profile is pre-specified (e.g. for one year). The
-second node defines the demand for each hour in the same time interval. The nodes are connected
-with an edge, which represents the commodity _electricity_. `syfop` then determines the optimal
-size of the wind park, such that demand is satisfied in each hour of the year, assuming that costs
-and electricity generation are scaled linearly by its size.
-
-In more detail, this is described as follows. We define a network of nodes, which are connected
-using directed edges (cycles are not allowed here, which means that the network is a [directed
-acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph)). Each node has several
-attributes, such as size and costs per unit of size. Each edge represents the transmission of a
-certain commodity between two nodes. The commodity is then either entirely used in the second node,
-which means that it does not have any other outgoing edges to other nodes, or it is converted to
-other commodities and transmitted to other nodes. This means that the sum of all inputs needs to
-equal all outputs in every time step. The conversion is defined linearly using a conversion factor.
+*syfop* allows the user to model a network, where commodities run through nodes representing
+certain types of technologies. Such a network is used to generate a linear optimization problem,
+which is solved to find the optimal sizes of the nodes such that the total cost of the network is
+minimized. The optimization uses discrete time series for all nodes on as pre-specified time
+interval.
 
 
 
@@ -45,8 +30,62 @@ See [documentation](https://syfop.readthedocs.io/latest/how-to-install.html) for
 How to use
 ----------
 
+A simple network which satisfies the demand for electricity using wind and solar PV, and uses
+excess electricity to produce hydrogen with an electrolyzer, can be defined as follows:
 
+```python
+from syfop.network import Network
+from syfop.nodes import Node, NodeFixOutput, NodeScalableInput, Storage
 
+# values here are a bit arbitrary but close to real values
+
+wind = NodeScalableInput(
+    name="wind",
+    input_profile=random_time_series(),
+    costs=128 * ureg.EUR / ureg.kW,
+)
+solar_pv = NodeScalableInput(
+    name="solar_pv",
+    input_profile=random_time_series(),
+    costs=53 * ureg.EUR / ureg.kW,
+)
+battery = Storage(
+    costs=33 * ureg.EUR / ureg.kWh,
+    max_charging_speed=0.2,
+    storage_loss=0,
+    charging_loss=0,
+)
+electricity = Node(
+    name="electricity",
+    inputs=[wind, solar_pv],
+    input_commodities="electricity",
+    costs=0,
+    storage=battery,
+)
+electrolyzer_convert_factor = 0.019 * ureg.kg / ureg.kWh
+electrolyzer = Node(
+    name="electrolyzer",
+    inputs=[electricity],
+    input_commodities="electricity",
+    size_commodity="hydrogen",
+    costs=1 / electrolyzer_convert_factor * 30 * ureg.EUR / ureg.kW,
+    convert_factor=electrolyzer_convert_factor,
+)
+demand = NodeFixOutput(
+    name="demand",
+    inputs=[electricity],
+    input_commodities="electricity",
+    output_flow=random_time_series() * ureg.MW,
+)
+
+network = Network([wind, solar_pv, electricity, electrolyzer, demand])
+
+network.optimize()
+```
+
+![Simple network](docs/source/_static/simple_network.png)
+
+More details can be found in [the documentation](https://syfop.readthedocs.io/latest/how-to-use.html).
 
 Acknowledgements
 ----------------
