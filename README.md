@@ -83,7 +83,7 @@ network = Network([wind, solar_pv, electricity, electrolyzer, demand])
 network.optimize()
 ```
 
-![Simple network](docs/source/_static/simple_network.png)
+![Simple network](doc/_static/network_wind-solarpv-hydrogen.png)
 
 More details can be found in [the documentation](https://syfop.readthedocs.io/latest/how-to-use.html).
 
