@@ -93,8 +93,8 @@ See the next sections and the [API documentation](project:api_reference/index.rs
 details.
 
 
-Node parameters and attributes
-------------------------------
+Node attributes
+---------------
 
 Each node has two dictonaries to access input and output flows:
 

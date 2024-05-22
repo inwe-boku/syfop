@@ -1,28 +1,34 @@
 How to install
 ==============
 
+Install syfop
+-------------
+
 At the moment there is no package built for syfop, but it can be installed via pip directly from the
 repository:
 
     pip install git+https://github.com/inwe-boku/syfop
 
-The opensource solver [HiGHs](https://highs.dev/) is installed automatically . Other
-[solvers](https://linopy.readthedocs.io/en/latest/solvers.html) are supported too, but not
-installed automatically.
 
-For development we recommend to run:
+For development we recommend to install test and development dependencies by running:
 
     pip install -e 'syfop[test,dev] @ git+https://github.com/inwe-boku/syfop'
     pre-commit install
 
 
-Precise versions of all dependencies, which have been tested, can be found in the
+Note that this uses the dependcies defininitons from the `pyproject.toml` file, which are only
+corsely defined. Precise versions of all dependencies, which have been tested, can be found in the
 [conda-env.yml](https://github.com/inwe-boku/syfop-global-costs/blob/main/conda-env.yml) file in
 the [syfop-global-costs](https://github.com/inwe-boku/syfop-global-costs/) repository.
 
 
-Solvers
--------
+Install solvers
+---------------
+
+The opensource solver [HiGHs](https://highs.dev/) is installed automatically . Other
+[solvers](https://linopy.readthedocs.io/en/latest/solvers.html) are supported too, but not
+installed automatically.
+
 
 ### Installation of Gurobi
 
