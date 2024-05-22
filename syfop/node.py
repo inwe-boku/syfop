@@ -97,7 +97,7 @@ class NodeScalableInput(NodeScalableBase, NodeInputBase):
     Attributes
     ----------
     size: linopy.variables.Variable
-        The size of the node.
+        The size of the node: sum of the output flows are less or equal to the size.
 
 
     Example
