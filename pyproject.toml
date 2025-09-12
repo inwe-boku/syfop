@@ -13,10 +13,11 @@ classifiers=[
     'Programming Language :: Python :: 3',
 ]
 dependencies = [
-    # let's freeze dependency versions ATM to avoid the depenency hell...
-    # newer versions of linopy should be compatible to newer versions of numpy and pandas,
-    # but the right version of bottleneck is not installed for some reason.
-    "xarray==2024.11",
+    # Let's freeze dependency versions ATM to avoid the depenency hell...
+    # Newer versions of linopy should be compatible to newer versions of numpy and pandas and xarray,
+    # but the correct version of bottleneck is not installed for some reason. Let's simply use these
+    # quite arbitrary fixed versions, which seem to be compatible.
+    "xarray==2024.3",
     "numpy==1.24",
     "pandas == 1.5",
 
