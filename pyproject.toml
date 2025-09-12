@@ -16,7 +16,7 @@ dependencies = [
     # let's freeze dependency versions ATM to avoid the depenency hell...
     # newer versions of linopy should be compatible to newer versions of numpy and pandas,
     # but the right version of bottleneck is not installed for some reason.
-    "xarray==2024",
+    "xarray==2024.11",
     "numpy==1.24",
     "pandas == 1.5",
 
